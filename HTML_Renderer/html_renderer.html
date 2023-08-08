@@ -1,80 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Html Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0px;
-            padding: 0px;
-            font-family: monospace;
+        textarea {
+            border: none;
+            outline: none;
+            overflow: auto;
+            height: 100%;
+            width: 100%;
+            resize: none;
+        }
+        form {
+            height: 100%;
+        }
+        h1, h2 {
+            margin-bottom: 4px;
+        }
+        #output {
+            padding-left: 1rem;
+            padding-top: 1rem;
         }
 
-        .box {
-            min-height: calc(100vh - 200px);
-            min-width: 100vw;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            align-items: center;
-            justify-content: center;
-        }
-
-        img {
-            width: 200px;
-            background-color: white;
-            padding: 1rem;
-            border-radius: 1rem;
+        .borders {
+            border-top: solid 2px #e33661;
+            border-bottom: solid 2px #e33661;
         }
     </style>
 </head>
 
-<body>
-    <img src="https://boolerang.co.uk/wp-content/uploads/job-manager-uploads/company_logo/2018/04/SG-Logo-Black.png" alt="Sparta Logo" />
-    <div class="box">
-        <h1>How to use the Browser Console</h1>
+<body onload="update()" style>
+    <main class="container-fluid">
+        <section style="padding-left: 5vw">
+            <img src="https://boolerang.co.uk/wp-content/uploads/job-manager-uploads/company_logo/2018/04/SG-Logo-Black.png"
+                alt="Sparta Logo" width="200" style="background-color: white;" />
+        </section>
 
-        <p id="arr"></p>
-        <button onclick="updateArray()">Update</button>
-    </div>
-    <script>
-        let myVariable = "Hello world";
-        let myArray = [1, 2, 3];
+        <section>
+            <grid class="grid" style="min-height:50vh;">
+                <div class="borders">
+                    <form>
+                        <textarea name="html" id="html" oninput="update()"></textarea>
+                    </form>
+                </div>
+                <div class="borders">
+                    <div id="output">
+                    </p>
+                </div>
+            </grid>
+        </section>
+        </div>
 
-        let myObject = {name: "Steve", number: 7};
-
-        console.log(myVariable)
-
-        console.table(myObject)
-
-
-        console.assert(myArray.length !== 3, "Array of length 3!")
-
-        console.trace();
-
-        updateArray();
-
-        function sayHello(msg = "How are ya?") {
-            return msg;
-        }
-
-        function updateArray() {
-            document.getElementById("arr").innerHTML = myArray;
-            slowFunction()
-        }
-
-        function slowFunction() {
-            console.time()
-            count = 0;
-            for(let i = 0; i < 500_000_000; i++) count += i * 0.33;
-            console.log(count);
-            console.timeEnd()
-        }        
-    </script>
+        <script>
+            let update = (event) => {
+                document.getElementById("output").innerHTML = document.getElementById("html").value
+            };
+        </script>
 </body>
 
 </html>
