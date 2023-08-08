@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Model</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.2/lib/p5.js"></script>
+    <script src="scripts/p5canvas.js"></script>
+    <script src="scripts/block.js"></script>
+    <script src="scripts/main.js"></script>
+    <link rel="stylesheet" href="memoryModel.css">
+</head>
+
+<body class="flex-v">
+    <div id="arrows"></div>
+    <h1>Memory Model</h1>
+    <section class="content">
+        <div class="flex justify-around gap-5">
+        <article class="flex-v gap-5">
+            <h2>Stack</h2>
+            <div id="stack-container">
+                <div id="stack" class="flex-v-rev"></div>
+            </div>
+            <div id="interpreter-container" class="flex-v gap-5">
+                <div class="flex gap-5">
+                    <h2 class="subtitle grow">Interpreter</h2>
+                    <button class="btn" onclick="showHelp()">Help</button>
+                </div>
+                <input id="interpreter" type="text" tabindex="0" onkeydown="interpret(event)">
+            </div>
+        </article>
+        <article class="flex-v gap-5" id="heap">
+            <h2>Heap</h2>
+            <div id="canvas"></div>
+            <div id="console-container" class="flex-v gap-5">
+                <h2 class="subtitle grow">Console</h2>
+                <p id="console">...</p>
+            </div>
+        </article>
+    </div>
+        <article class="flex justify-centre" id="menu">
+            <button class="btn menu-btn" onclick="toggleDrawing()" id="drawArrowBtn">Draw Arrow</button>
+            <button class="btn menu-btn" onclick="undoArrow()">Undo Arrow</button>
+            <button class="btn menu-btn" onclick="startDeletingArrow()" id="deleteBtn">Delete Arrow</button>
+            <button class="btn menu-btn" onclick="clearArrows()">Clear Arrows</button>
+            <button class="btn menu-btn" onclick="hideArrows()" id="hideBtn">Hide Arrows</button>
+            <button class="btn menu-btn" onclick="clearMemory()">Clear Memory</button>
+            <!-- <button class="btn" onclick="compactMemory()">Collect Garbage!</button> -->
+        </article>
+    </section>
+</body>
+
+</html>

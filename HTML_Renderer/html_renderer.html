@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0px;
+            padding: 0px;
+            font-family: monospace;
+        }
+
+        .box {
+            min-height: calc(100vh - 200px);
+            min-width: 100vw;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        img {
+            width: 200px;
+            background-color: white;
+            padding: 1rem;
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <img src="https://boolerang.co.uk/wp-content/uploads/job-manager-uploads/company_logo/2018/04/SG-Logo-Black.png" alt="Sparta Logo" />
+    <div class="box">
+        <h1>How to use the Browser Console</h1>
+
+        <p id="arr"></p>
+        <button onclick="updateArray()">Update</button>
+    </div>
+    <script>
+        let myVariable = "Hello world";
+        let myArray = [1, 2, 3];
+
+        let myObject = {name: "Steve", number: 7};
+
+        console.log(myVariable)
+
+        console.table(myObject)
+
+
+        console.assert(myArray.length !== 3, "Array of length 3!")
+
+        console.trace();
+
+        updateArray();
+
+        function sayHello(msg = "How are ya?") {
+            return msg;
+        }
+
+        function updateArray() {
+            document.getElementById("arr").innerHTML = myArray;
+            slowFunction()
+        }
+
+        function slowFunction() {
+            console.time()
+            count = 0;
+            for(let i = 0; i < 500_000_000; i++) count += i * 0.33;
+            console.log(count);
+            console.timeEnd()
+        }        
+    </script>
+</body>
+
+</html>
