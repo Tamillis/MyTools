@@ -14,3 +14,8 @@ Used during my video production for Sparta Global, in particular the HTML Short,
 ![HTML Renderer](./Screenshots/HTML_Renderer.jpg)
 
 [HTML Renderer](./HTML_Renderer)
+
+## Csv Downloader
+A small JS utility class that allows you to create and download .csv files from JSON data.
+
+No sexy screenshot for this one, just go see the file [here](./CsvDownloader/CsvDownloader.js) and the demo [here](./CsvDownloader/Demo.html).

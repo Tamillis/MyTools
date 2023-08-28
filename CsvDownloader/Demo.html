@@ -26,7 +26,8 @@
 
     <main class="center">
         <h1>Csv Downloader Example</h1>
-        <button onclick="CsvDownloader.download(data.orders, 'newData.csv')">Click me for download</button>
+        <code id="data"></code>
+        <button onclick="CsvDownloader.download(data.orders, 'newData.csv')">Click me to download the above as a csv file</button>
     </main>
 
     <script>
@@ -38,6 +39,8 @@
                 { name: "Kelly", age: 33, dob: new Date(1930, 12, 21) }
             ]
         };
+
+        document.getElementById("data").innerText = JSON.stringify(data.orders);
 
         // Incorrect example data set
         let data2 = {
