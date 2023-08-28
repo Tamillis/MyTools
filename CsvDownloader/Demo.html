@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Maker</title>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+        }
+        .center {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+    <script src="CsvDownloader.js" defer></script>
+</head>
+
+<body>
+
+    <main class="center">
+        <h1>Csv Downloader Example</h1>
+        <button onclick="CsvDownloader.download(data.orders, 'newData.csv')">Click me for download</button>
+    </main>
+
+    <script>
+        // Correct Example Data
+        let data = {
+            orders: [
+                { name: "Bob", age: 21, dob: new Date(1993, 1, 1) },
+                { name: "Tim", age: 19, dob: new Date(2001, 1, 1) },
+                { name: "Kelly", age: 33, dob: new Date(1930, 12, 21) }
+            ]
+        };
+
+        // Incorrect example data set
+        let data2 = {
+            orders: ["bad", "data"]
+        };
+
+        let data3 = {
+            orders: [
+                { name: "bob", age: 21, dob: new Date(1993, 1, 1) },
+                { name: "Tim", age: 19, dob: new Date(2001, 1, 1) },
+                { name: "Kelly", age: 33, dob: new Date(1930, 12, 21), trick: true }
+            ]
+        };
+
+        let data4 = {
+            orders: null
+        };
+
+        let data5 = {
+            orders: {
+                name: "test",
+                age: 0
+            }
+        };
+
+        test("Not Array Data", data);
+        test("Good Data", data.orders);
+        test("Just an array", data2.orders);
+        test("Uneven objects", data3.orders);
+        test("null", data4.orders);
+        test("Single object", data5.orders);
+
+        function test(msg, data) {
+            console.log(msg, data, "Output: " + CsvDownloader.IsCsvCompatible(data))
+        }
+
+    </script>
+</body>
+
+</html>
