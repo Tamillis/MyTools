@@ -39,12 +39,12 @@ class TableMaker {
     static addSorting(head, sortings, classes, data) {
         // thead > tr > th
         for(let th of head.childNodes[0].childNodes) {
-            console.log(th, th.value, sortings)
+
             if(sortings.includes(th.value)) {
                 let btn = document.createElement("button");
                 btn.innerText = "←";
                 btn.onclick = () => alert("TODO, the tricky bit");
-                TableMaker.addStylesToElement(btn, classes.btn);
+                TableMaker.addStylesToElement(btn, classes.button);
                 th.appendChild(btn);
             }
         }
@@ -69,7 +69,7 @@ class TableMaker {
             //FORMAT DATA
             let content = data[key];
             if(content instanceof Date) content = content.toLocaleDateString();
-            
+
             let text = document.createTextNode(content);
             td.appendChild(text);
         }
