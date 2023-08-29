@@ -1,41 +1,46 @@
 
 class TableMaker {
 
-    static generateTableHead(table, data) {
+    static generateTableHead(table, data, classes = []) {
         let thead = table.createTHead();
         let row = thead.insertRow();
         for (let key of data) {
             let th = document.createElement("th");
+            for(let style of classes) th.classList.add(style);
             let text = document.createTextNode(key);
             th.appendChild(text);
             row.appendChild(th);
         }
     }
     
-    static generateTable(table, data) {
+    static generateTable(table, data, classes = []) {
         for (let element of data) {
             let row = table.insertRow();
             for (let key in element) {
                 let cell = row.insertCell();
+                for(let style of classes) cell.classList.add(style);
                 let text = document.createTextNode(element[key]);
                 cell.appendChild(text);
             }
         }
     }
 
-    static fillTable(tableId, data) {
-        let table = document.querySelector("#" + tableId);
+    static fillTable(data, tableAttributes) {
+        let table = document.getElementById(tableAttributes.id);
         if(!table) console.error("No table found");
+        let classes = tableAttributes.classes == null ? [] : tableAttributes.classes;
+        for(let style of classes) table.classList.add(style);
         let headings = Object.keys(data[0]);
-        TableMaker.generateTableHead(table, headings);
-        TableMaker.generateTable(table, data);
+        TableMaker.generateTableHead(table, headings, classes);
+        TableMaker.generateTable(table, data, classes);
     }
 
-    static makeTable(parentSelector, tableId, data) {
+    static makeTable(data, parentSelector, tableAttributes = { id: "", classes: []} ) {
         let table = document.createElement("table");
-        table.id = tableId;
+        if(!tableAttributes || !tableAttributes.id || tableAttributes.id == "") tableAttributes.id = "t" + Date.now();
+        table.id = tableAttributes.id;
         document.querySelector(parentSelector).appendChild(table);
 
-        TableMaker.fillTable(tableId, data);
+        TableMaker.fillTable(data, tableAttributes);
     }
 }

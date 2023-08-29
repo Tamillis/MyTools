@@ -35,11 +35,22 @@
             border: 1px solid black;
             padding: 2px;
         }
+
+        .myTable {
+            border-collapse: collapse;
+            border: 1px solid black;
+            padding: 2px;
+        }
+
+        .red-border {
+            border: 2px red groove;
+        }
     </style>
     <script src="TableMaker.js" defer></script>
 </head>
 
 <body>
+    <h1>TableMaker Demo</h1>
     <code id="info"></code>
     <button onclick="makeTable()">Make Table</button>
 
@@ -54,7 +65,7 @@
         document.querySelector("code").innerText = JSON.stringify(data);
 
         function makeTable() {
-            TableMaker.makeTable("body", "newTable", data);
+            TableMaker.makeTable(data, "body", { id: "newTable", classes: ["myTable", "red-border"] });
         }
     </script>
 </body>
