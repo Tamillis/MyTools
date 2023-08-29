@@ -24,10 +24,18 @@ class TableMaker {
     }
 
     static fillTable(tableId, data) {
-        let table = document.querySelector(tableId);
-        if(!table) return;
+        let table = document.querySelector("#" + tableId);
+        if(!table) console.error("No table found");
         let headings = Object.keys(data[0]);
         TableMaker.generateTableHead(table, headings);
         TableMaker.generateTable(table, data);
+    }
+
+    static makeTable(parentSelector, tableId, data) {
+        let table = document.createElement("table");
+        table.id = tableId;
+        document.querySelector(parentSelector).appendChild(table);
+
+        TableMaker.fillTable(tableId, data);
     }
 }
