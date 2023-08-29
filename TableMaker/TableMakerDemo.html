@@ -47,6 +47,8 @@
         }
     </style>
     <script src="TableMaker.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 </head>
 
 <body>
@@ -54,18 +56,29 @@
     <code id="info"></code>
     <button onclick="makeTable()">Make Table</button>
 
-    <table id="table"></table>
+    <div id="table-container"></div>
 
     <script defer>
         let data = [
-            { name: "Bob", age: 21, dob: new Date(1993, 1, 1) },
-            { name: "Tim", age: 19, dob: new Date(2001, 1, 1) },
-            { name: "Kelly", age: 33, dob: new Date(1930, 12, 21) }
+            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1) },
+            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1) },
+            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21) },
+            { name: "Reginald", age: 1_000_000, dateOfBirth: null },
         ];
         document.querySelector("code").innerText = JSON.stringify(data);
+        let i = 0;
 
         function makeTable() {
-            TableMaker.makeTable(data, "body", { id: "newTable", classes: ["myTable", "red-border"] });
+            if (i++ < 1) TableMaker.makeTable(
+                data,
+                {
+                    id: "newTable" + i++,
+                    classes: {
+                        table: ["table", "table-bordered", "border-primary"]
+                    },
+                    parentSelector: "#table-container",
+                    sorting: ["age", "dateOfBirth"]
+                });
         }
     </script>
 </body>
