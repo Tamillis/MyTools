@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Maker</title>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            box-sizing: border-box;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            margin: 1rem;
+        }
+
+        code {
+            font-size: large;
+            max-width: 720px;
+            text-align: center;
+        }
+
+        table,
+        td,
+        th {
+            border-collapse: collapse;
+            border: 1px solid black;
+            padding: 2px;
+        }
+    </style>
+    <script src="TableMaker.js" defer></script>
+</head>
+
+<body>
+    <code id="info"></code>
+    <button onclick="makeTable()">Make Table</button>
+
+    <table id="table"></table>
+
+    <script defer>
+        let data = [
+            { name: "Bob", age: 21, dob: new Date(1993, 1, 1) },
+            { name: "Tim", age: 19, dob: new Date(2001, 1, 1) },
+            { name: "Kelly", age: 33, dob: new Date(1930, 12, 21) }
+        ];
+        document.querySelector("code").innerText = JSON.stringify(data);
+
+        function makeTable() {
+            TableMaker.fillTable("table", data);
+        }
+    </script>
+</body>
+
+</html>
