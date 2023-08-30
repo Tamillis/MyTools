@@ -24,9 +24,7 @@ No sexy screenshot for this one, just go see the file [here](./CsvDownloader/Csv
 
 The beginnings of my own front-end replacement to Telerik's Grid, giving me full control over it and also cutting down on server calls by a lot.
 
-The `TableMaker.makeTable(data, tableAttributes)` method is the only entry point so far. 
-- `data` must be valid JSON in the form of an array of objects that all have the same properties.
-- `tableAttributes` is the API that the TableMaker uses to configure the table, see below
+A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with appropriate json `data` and your desired `tableAttributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. On this object call `makeTable()` and violá.
 
 ### TableMaker API
 The tableMaker functions simply: through data provided to the `tableAttributes` input, the table generated can be defined and customised.
@@ -34,20 +32,21 @@ The tableMaker functions simply: through data provided to the `tableAttributes` 
 | **Attribute** | **Effect** |
 | --- | --- |
 | `id` | The html id of the table generated, defaults to `"t" + Date.now()` |
-| `classes` | the css style classes to apply. Must be an object where each parameter matches the HTML element that you want those classes to apply to, and the value an array of strings of the classes you want to apply. Note if no classes are defined for an element it defaults to the following bootstrap classes:  |
+| `classes` | the css style classes to apply. Must be an object where each parameter matches the HTML element that you want those classes to apply to, and the value an array of strings of the classes you want to apply. Note if no classes are defined for an element it defaults to the following bootstrap classes, but if any are defined for an element, all defaults for that element are lost:  |
 ```js 
 {
     table : ["table", "table-striped", "table-bordered"],
-    th : ["h5"],
+    th : ["h5", "align-text-bottom"],
     td : ["text-body-secondary"]
 }
 ```
 | **Attribute** | **Effect** |
 | --- | --- |
 | `parentSelector` | the css selector for determining the parent element, defaults to `body` |
+| `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
+|  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
+
 
 TODO:
-- Add filter conditions and ordering buttons
+- Add conditional formatting
 - Add pagination
-- manner to flag certain rows with classes / custom functionality (passed in function?)
-- flag to convert dates to short strings

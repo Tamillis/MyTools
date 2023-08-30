@@ -16,6 +16,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 1rem;
         }
 
         button {
@@ -53,32 +54,35 @@
 
 <body>
     <h1>TableMaker Demo</h1>
+
     <code id="info"></code>
+
+        
     <button onclick="makeTable()">Make Table</button>
 
     <div id="table-container"></div>
 
     <script defer>
         let data = [
-            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1) },
-            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1) },
-            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21) },
-            { name: "Reginald", age: 1_000_000, dateOfBirth: null },
+            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest : true },
+            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest : true },
+            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest : false },
+            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1,1,1), wealth: 42, isGuest : false },
         ];
-        document.querySelector("code").innerText = JSON.stringify(data);
-        let i = 0;
+        document.querySelector("code").innerText = JSON.stringify(data).split(",").reduce((prev,curr)=>prev += "\n" + curr);
 
         function makeTable() {
-            if (i++ < 1) TableMaker.makeTable(
-                data,
-                {
-                    id: "newTable" + i++,
+            let tm = new TableMaker(data, {
+                    id: "newTable",
                     classes: {
-                        table: ["table", "table-bordered", "border-primary"]
+                        table: ["table", "table-bordered", "table-striped"],
+                        button: ["btn", "btn-sm","btn-outline-dark", "rounded"]
                     },
                     parentSelector: "#table-container",
-                    sorting: ["age", "dateOfBirth"]
+                    sorting: ["name", "age", "wealth"],
+                    currency: ["wealth"]
                 });
+            tm.makeTable();
         }
     </script>
 </body>
