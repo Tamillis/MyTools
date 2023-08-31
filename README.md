@@ -26,6 +26,15 @@ The beginnings of my own front-end replacement to Telerik's Grid, giving me full
 
 A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with appropriate json `data` and your desired `tableAttributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. On this object call `makeTable()` and violá.
 
+### Given well-formed JSON
+![TableMakerDemo](./Screenshots/TableMakerInitial.png)
+
+### When called (with optional options)
+![TableMakerCode](./Screenshots/TableMakerUsage.png)
+
+### Then a Table is made
+![TableMakerResult](/Screenshots/TableMakerDemoResult.png)
+
 ### TableMaker API
 The tableMaker functions simply: through data provided to the `tableAttributes` input, the table generated can be defined and customised.
 
