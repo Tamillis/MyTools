@@ -27,8 +27,6 @@ class TableMaker {
             ...this.tableAttributeDefaults.classes,
             ...tableAttributes.classes
         }
-
-        this.makeTable();
     }
 
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
@@ -126,7 +124,7 @@ class TableMaker {
                 currency: 'GBP',
             });
 
-            if(this.tableAttributes.currency.includes(key)) content = formatter.format(content);
+            if(this.tableAttributes.currency && this.tableAttributes.currency.includes(key)) content = formatter.format(content);
 
             let text = document.createTextNode(content);
             td.appendChild(text);

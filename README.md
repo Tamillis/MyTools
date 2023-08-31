@@ -57,5 +57,6 @@ The tableMaker functions simply: through data provided to the `tableAttributes` 
 
 
 TODO:
+- Hide certain columns
 - Add conditional formatting
 - Add pagination
