@@ -54,9 +54,24 @@ The tableMaker functions simply: through data provided to the `tableAttributes` 
 | `parentSelector` | the css selector for determining the parent element, defaults to `body` |
 | `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
 |  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
+| `hide` | an array of strings for the columns that you don't want to be in the table |
 
 
 TODO:
-- Hide certain columns
 - Add conditional formatting
 - Add pagination
+
+## NMaker Utilities
+TBC Name for the TableMaker and co.
+
+NMaker components make use of each other!
+
+NMaker components communicate through custom events meaning they don't have to be coupled at all. I.e. rewriting the sort button section of TableMaker to be from ButtonMaker and TableMaker refreshes on the custom `dataUpdate` event.
+
+Ideas:
+ - LinkMaker - makes button-like link from given url string and `linkOptions`
+ - ButtonMaker - makes button from given function (the onclick function) and `buttonOptions`
+ - DropDownMaker - makes a dropdown list from given options
+ - PrintMaker - makes a print button that takes in the id of the div to print
+ - FileUploadMaker
+ - EventManager - ensures that different events communicate with each other and does computation for steps that need it, i.e. if a DropDownMaker's `optionSelected` event needs to cause a response in the data, the `EventManager` does that (this, then would be separate from the components inteded by end user). 

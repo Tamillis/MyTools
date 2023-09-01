@@ -71,7 +71,16 @@
         ];
         document.querySelector("code").innerText = JSON.stringify(data).split(",").reduce((prev,curr)=>prev += "\n" + curr);
 
+
         function makeTable() {
+            let pm = new PaginatorMaker(data, {
+                id : "newPaginator",
+                parentSelector: "#table-container"
+            });
+
+            data = pm.pagedData;
+            pm.makePaginator();
+
             let tm = new TableMaker(data, {
                     id: "newTable",
                     classes: {
@@ -79,7 +88,9 @@
                         button: ["btn", "btn-sm","btn-outline-dark", "rounded"]
                     },
                     parentSelector: "#table-container",
-                    sorting: ["name", "age", "wealth"]
+                    sorting: ["name", "age", "wealth"],
+                    hide: ["isGuest"],
+                    currency: ["wealth"]
                 });
             tm.makeTable();
         }
