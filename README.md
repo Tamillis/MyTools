@@ -20,23 +20,43 @@ A small JS utility class that allows you to create and download .csv files from 
 
 No sexy screenshot for this one, just go see the file [here](./CsvDownloader/CsvDownloader.js) and the demo [here](./CsvDownloader/Demo.html).
 
-## TableMaker
+## NMaker Utilities
+My own light JS Front End framework.
+
+The use case is simply: given a single lump of JSON data, have a bunch of tools to manipulate that data.
+
+The `NMaker` static class contains some helper functions as well as doubling as the source of truth for the data under `NMaker.data`.
+
+All components load from this data, and listen in on the `updateData` event that the `NMaker` sets up on the `document`.
+
+The example makes plenty of use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS can be used)
+
+Ideas:
+ - LinkMaker - makes button-like link from given url string and `linkOptions`
+ - ButtonMaker - makes button from given function (the onclick function) and `buttonOptions`
+ - DropDownMaker - makes a dropdown list from given options
+ - PrintMaker - makes a print button that takes in the id of the div to print
+ - FileUploadMaker - I don't even know how
+ - DynamicFilter - smart feature that allows you to filter the data based on criteria, the kinds of filter presented automatically selected by analysing the data
+ - EventManager - ensures that different events communicate with each other and does computation for steps that need it, i.e. if a DropDownMaker's `optionSelected` event needs to cause a response in the data, the `EventManager` does that (this, then would be separate from the components inteded by end user). 
+
+### TableMaker
 
 The beginnings of my own front-end replacement to Telerik's Grid, giving me full control over it and also cutting down on server calls by a lot.
 
-A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with appropriate json `data` and your desired `tableAttributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. On this object call `makeTable()` and violá.
+A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with appropriate json `data` and your desired `attributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. On this object call `makeTable()` and violá.
 
-### Given well-formed JSON
+#### Given well-formed JSON
 ![TableMakerDemo](./Screenshots/TableMakerInitial.png)
 
-### When called (with optional options)
+#### When called (with optional options)
 ![TableMakerCode](./Screenshots/TableMakerUsage.png)
 
-### Then a Table is made
+#### Then a Table is made
 ![TableMakerResult](/Screenshots/TableMakerDemoResult.png)
 
-### TableMaker API
-The tableMaker functions simply: through data provided to the `tableAttributes` input, the table generated can be defined and customised.
+#### TableMaker API
+The tableMaker functions simply: through data provided to the `attributes` input, the table generated can be defined and customised.
 
 | **Attribute** | **Effect** |
 | --- | --- |
@@ -58,20 +78,11 @@ The tableMaker functions simply: through data provided to the `tableAttributes` 
 
 
 TODO:
-- Add conditional formatting
-- Add pagination
+- Add conditional formatting. Within classes, also have `[ClassName]If` i.e. `buttonIf` where the first string in the array is actually a boolean conditional, which can be `Eval()`ed and the rest of the array applied as classes if the eval was true. 
 
-## NMaker Utilities
-TBC Name for the TableMaker and co.
+### PaginatorMaker
 
-NMaker components make use of each other!
+To Explain, but the code is up.
 
-NMaker components communicate through custom events meaning they don't have to be coupled at all. I.e. rewriting the sort button section of TableMaker to be from ButtonMaker and TableMaker refreshes on the custom `dataUpdate` event.
-
-Ideas:
- - LinkMaker - makes button-like link from given url string and `linkOptions`
- - ButtonMaker - makes button from given function (the onclick function) and `buttonOptions`
- - DropDownMaker - makes a dropdown list from given options
- - PrintMaker - makes a print button that takes in the id of the div to print
- - FileUploadMaker
- - EventManager - ensures that different events communicate with each other and does computation for steps that need it, i.e. if a DropDownMaker's `optionSelected` event needs to cause a response in the data, the `EventManager` does that (this, then would be separate from the components inteded by end user). 
+### FilterMaker
+A dynamic filtering component.

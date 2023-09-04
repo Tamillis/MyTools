@@ -18,80 +18,82 @@
             align-items: center;
             gap: 1rem;
         }
-
-        button {
-            margin: 1rem;
-        }
-
-        code {
-            font-size: large;
-            max-width: 720px;
-            text-align: center;
-        }
-
-        table,
-        td,
-        th {
-            border-collapse: collapse;
-            border: 1px solid black;
-            padding: 2px;
-        }
-
-        .myTable {
-            border-collapse: collapse;
-            border: 1px solid black;
-            padding: 2px;
-        }
-
-        .red-border {
-            border: 2px red groove;
-        }
     </style>
     <script src="TableMaker.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 </head>
 
-<body>
-    <h1>TableMaker Demo</h1>
+<body class="container">
+    <h1 class="display-2">TableMaker Demo</h1>
 
-    <code id="info"></code>
+    <div class="row">
+        <div class="btn-group" role="group">
+            <button onclick="showRaw(this)" class="btn btn-outline-danger">Show Raw Data</button>
+            <button onclick="makeTable()" class="btn btn-outline-secondary">Make Table</button>
+        </div>
+    </div>
 
-        
-    <button onclick="makeTable()">Make Table</button>
+    <div class="row">
+        <pre id="info" hidden></pre>
+    </div>
 
-    <div id="table-container"></div>
+
+    <div id="table-container" class="row"></div>
 
     <script defer>
         let data = [
-            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest : true },
-            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest : true },
-            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest : false },
-            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1,1,1), wealth: 42, isGuest : false },
+            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest: true },
+            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest: false },
+            { name: "Shaytan", age: 33, dateOfBirth: new Date(666, 6, 6), wealth: 666, isGuest: true },
+            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest: false },
+            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1, 1, 1), wealth: 42, isGuest: false },
         ];
-        document.querySelector("code").innerText = JSON.stringify(data).split(",").reduce((prev,curr)=>prev += "\n" + curr);
+        document.querySelector("pre").innerText = JSON.stringify(data, null, 2);
+        let visible = false;
+        let i = 1;
 
+        function showRaw(el) {
+            visible = !visible;
+            let pre = document.querySelector("pre");
+            if (visible) {
+                pre.hidden = false;
+                el.innerText = "Hide Raw Data";
+            }
+            else {
+                pre.hidden = true;
+                el.innerText = "Show Raw Data"
+            }
+        }
 
         function makeTable() {
-            let pm = new PaginatorMaker(data, {
-                id : "newPaginator",
+            if (i++ > 1) return;
+
+            NMaker.init(data);
+
+            // let pm = new PaginatorMaker({
+            //     id : "newPaginator",
+            //     parentSelector: "#table-container",
+            //     pageLength: 3
+            // });
+            // pm.makePaginator();
+
+            let filter = new FilterMaker({
                 parentSelector: "#table-container"
             });
+            filter.makeFilter();
 
-            data = pm.pagedData;
-            pm.makePaginator();
-
-            let tm = new TableMaker(data, {
-                    id: "newTable",
-                    classes: {
-                        table: ["table", "table-bordered", "table-striped"],
-                        button: ["btn", "btn-sm","btn-outline-dark", "rounded"]
-                    },
-                    parentSelector: "#table-container",
-                    sorting: ["name", "age", "wealth"],
-                    hide: ["isGuest"],
-                    currency: ["wealth"]
-                });
+            let tm = new TableMaker({
+                id: "newTable",
+                classes: {
+                    table: ["table", "table-bordered", "table-striped"],
+                    button: ["btn", "btn-sm", "btn-outline-dark", "rounded"]
+                },
+                parentSelector: "#table-container",
+                sorting: ["name", "age", "dateOfBirth", "wealth"],
+                hide: ["isGuest"],
+                currency: ["wealth"]
+            });
             tm.makeTable();
         }
     </script>
