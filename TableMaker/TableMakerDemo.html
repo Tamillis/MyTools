@@ -39,6 +39,7 @@
     </div>
 
 
+    <div id="paginator-container" class="row"></div>
     <div id="table-container" class="row"></div>
 
     <script defer>
@@ -71,30 +72,23 @@
 
             NMaker.init(data);
 
-            // let pm = new PaginatorMaker({
-            //     id : "newPaginator",
-            //     parentSelector: "#table-container",
-            //     pageLength: 3
-            // });
-            // pm.makePaginator();
+            let pm = new PaginatorMaker({
+                id : "newPaginator",
+                parentSelector: "#paginator-container",
+                pageLength: 4
+            });
 
             let filter = new FilterMaker({
                 parentSelector: "#table-container"
             });
-            filter.makeFilter();
 
             let tm = new TableMaker({
                 id: "newTable",
-                classes: {
-                    table: ["table", "table-bordered", "table-striped"],
-                    button: ["btn", "btn-sm", "btn-outline-dark", "rounded"]
-                },
                 parentSelector: "#table-container",
                 sorting: ["name", "age", "dateOfBirth", "wealth"],
                 hide: ["isGuest"],
                 currency: ["wealth"]
             });
-            tm.makeTable();
         }
     </script>
 </body>

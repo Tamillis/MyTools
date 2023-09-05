@@ -1,7 +1,8 @@
 class NMaker {
     static updatedData = new Event("updatedData");
+    static updatedPageData = new Event("updatedPageData");
     static data = [];
-    static currData = [];
+    static filteredData = [];
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
     static toCapitalizedWords(name) {
         var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
@@ -45,6 +46,14 @@ class NMaker {
         if (Array.isArray(styles)) for (let style of styles) el.classList.add(style);
     }
 
+    static replaceElement(id, kind) {
+        let el = document.getElementById(id);
+        if (el) el.parentElement.removeChild(el);
+        el = document.createElement(kind);
+        el.id = id;
+        return el;
+    }
+
     static makeBtn(name, fn, classes = null) {
         let btn = document.createElement("button");
         btn.innerText = name;
@@ -55,7 +64,8 @@ class NMaker {
 
     static init(data) {
         if(!NMaker.IsCompatible(data)) throw new Error("No or invalid JSON provided");
-        NMaker.currData = [...data];
+        NMaker.filteredData = [...data];
+        NMaker.pagedData = [...data];
         NMaker.data = Object.freeze(data);
         NMaker.headings = Object.keys(data[0]);
     }
@@ -68,9 +78,9 @@ class TableMaker {
             id: "t" + Date.now(),
             classes: {
                 table: ["table", "table-striped", "table-bordered"],
-                th: ["h5", "align-text-bottom"],
-                td: ["text-body-secondary"],
-                button: ["btn"]
+                heading: ["h5", "align-text-bottom"],
+                row: ["text-body-secondary"],
+                button: ["btn", "btn-sm", "btn-outline-primary", "float-end"]
             },
             parentSelector: "body",
             sorting: false,
@@ -93,12 +103,12 @@ class TableMaker {
             ...attributes.classes
         }
 
-        this.data = NMaker.currData;
-
-        document.addEventListener("updatedData", (e) => {
-            this.data = NMaker.currData;
+        document.addEventListener("updatedPageData", (e) => {
+            this.data = NMaker.pagedData;
             this.makeTable();
         });
+
+        document.dispatchEvent(NMaker.updatedPageData);
     }
 
     addSortBtn(column) {
@@ -117,11 +127,11 @@ class TableMaker {
             this.attributes.sortingOrientation[column] = btnKind == "asc" ? "desc" : "asc";
 
             //sort the exposed data
-            NMaker.currData.sort((prevRow, currRow) => {
+            NMaker.pagedData.sort((prevRow, currRow) => {
                 let comparison = compare(prevRow[column], currRow[column]);
                 return btnKind == "asc" ? -1 * comparison : comparison;
             });
-            document.dispatchEvent(NMaker.updatedData);
+            document.dispatchEvent(NMaker.updatedPageData);
         }, this.attributes.classes.button);
     }
 
@@ -146,10 +156,11 @@ class TableMaker {
         for (let key of NMaker.headings) {
             if (this.attributes.hide.includes(key)) continue;
             let th = document.createElement("th");
-            NMaker.addStylesToElement(th, this.attributes.classes.th);
+            let span = document.createElement("span");
+            NMaker.addStylesToElement(span, this.attributes.classes.heading);
             th.value = key;
-            let text = document.createTextNode(NMaker.toCapitalizedWords(key));
-            th.appendChild(text);
+            span.innerText = NMaker.toCapitalizedWords(key);
+            th.appendChild(span);
             row.appendChild(th);
         }
         return thead;
@@ -161,7 +172,7 @@ class TableMaker {
         NMaker.addStylesToElement(tbody, this.attributes.classes.tbody);
 
         for (let rowData of this.data) {
-            this.generateRow(tbody, rowData, this.attributes.classes.td);
+            this.generateRow(tbody, rowData, this.attributes.classes.row);
         }
         return tbody;
     }
@@ -202,15 +213,7 @@ class TableMaker {
     /// Main entry point, data must be valid and well-formed JSON
     makeTable() {
         //either make new table element or overwrite specified table element
-        this.table = document.getElementById(this.attributes.id);
-        if (!this.table) {
-            this.table = document.createElement("table");
-        }
-        else {
-            this.table.parentElement.removeChild(this.table);
-            this.table = document.createElement("table");
-        }
-
+        this.table = NMaker.replaceElement(this.attributes.id, "table");
         this.table.id = this.attributes.id;
 
         for (let style of this.attributes.classes.table) this.table.classList.add(style);
@@ -224,13 +227,12 @@ class TableMaker {
 class PaginatorMaker {
     constructor(attributes) {
         // Defaults
-        this.page = 1;
         this.attributeDefaults = {
             id: "paginatorMaker" + Date.now(),
             pageLength: 2,
             classes: {
                 container: ["navbar", "navbar-expand-sm"],
-                button: ["btn", "btn-sm", "btn-outline-dark"],
+                button: ["btn", "btn-sm", "btn-outline-primary"],
                 p: ["navbar-brand", "mx-2"]
             }
         };
@@ -247,12 +249,17 @@ class PaginatorMaker {
         };
 
         // Paginator data
-        this.data = NMaker.data;
-        this.pages = Math.ceil(this.data.length / this.attributes.pageLength);
+        this.page = 1;
+        this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
 
-        this.pagedData = this.getPagedData();
-        NMaker.currData = this.pagedData;
+        document.addEventListener("updatedData", (e) => {
+            this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
+            this.page = 1;
+            NMaker.pagedData = this.getPagedData();
+            this.makePaginator();
+        });
 
+        document.dispatchEvent(NMaker.updatedData);
     }
 
     /// produce a new array to prevent mutation
@@ -262,7 +269,7 @@ class PaginatorMaker {
         //this.page is the current page, this.attributes.pages is the total number of pages, this.pageLength is the number of entries per page
         for (let i = 0; i < this.attributes.pageLength; i++) {
             let j = (this.page - 1) * this.attributes.pageLength + i;
-            if (j < this.data.length) pagedData[i] = this.data[j];
+            if (j < NMaker.filteredData.length) pagedData[i] = NMaker.filteredData[j];
         }
 
         return pagedData;
@@ -270,7 +277,7 @@ class PaginatorMaker {
 
     makePaginator() {
         //create paginator container
-        let container = document.createElement("nav");
+        let container = NMaker.replaceElement(this.attributes.id,"nav");
         container.id = this.attributes.id;
         NMaker.addStylesToElement(container, this.attributes.classes.container);
 
@@ -278,9 +285,8 @@ class PaginatorMaker {
         let prevBtn = NMaker.makeBtn("<-", () => {
             this.page--;
             if (this.page < 1) this.page = 1;
-            this.pagedData = this.getPagedData();
-            NMaker.currData = this.pagedData;
-            document.dispatchEvent(NMaker.updatedData);
+            NMaker.pagedData = this.getPagedData();
+            document.dispatchEvent(NMaker.updatedPageData);
             this.updateDisplay();
         }, this.attributes.classes.button);
         container.appendChild(prevBtn);
@@ -298,9 +304,8 @@ class PaginatorMaker {
         let nextBtn = NMaker.makeBtn("->", () => {
             this.page++;
             if (this.page > this.pages) this.page = this.pages;
-            this.pagedData = this.getPagedData();
-            NMaker.currData = this.pagedData;
-            document.dispatchEvent(NMaker.updatedData);
+            NMaker.pagedData = this.getPagedData();
+            document.dispatchEvent(NMaker.updatedPageData);
             this.updateDisplay();
         }, this.attributes.classes.button);
         container.appendChild(nextBtn);
@@ -324,11 +329,11 @@ class FilterMaker {
             id: "filter-" + Date.now(),
             parentSelector: "body",
             classes: {
-                container: ["row", "input-group"],
-                button: ["btn", "btn-sm", "btn-outline-info"],
+                container: ["mb-2", "input-group"],
+                button: ["btn", "btn-sm", "btn-outline-primary"],
                 input: ["form-control"],
                 dropdown: ["form-select"],
-                checkbox: ["form-check-input", "align-middle", "mx-0"]
+                checkbox: ["form-check-input"]
             }
         };
 
@@ -338,6 +343,7 @@ class FilterMaker {
         }
 
         this.data = NMaker.data;
+        this.makeFilter();
     }
 
     makeFilter() {
@@ -345,6 +351,20 @@ class FilterMaker {
         let container = document.createElement("div");
         container.id = this.attributes.id;
         NMaker.addStylesToElement(container, this.attributes.classes.container);
+
+        //reset button
+        let resetBtn = document.createElement("button");
+        resetBtn.onclick = () => {
+            document.getElementById(this.attributes.id + "-input").value = "";
+            document.getElementById(this.attributes.id + "-input").checked = false;
+            NMaker.filteredData = NMaker.data;
+            NMaker.pagedData = NMaker.data;
+            document.dispatchEvent(NMaker.updatedData);
+            document.dispatchEvent(NMaker.updatedPageData);
+        };
+        resetBtn.innerHTML = "&#8635;";
+        NMaker.addStylesToElement(resetBtn, this.attributes.classes.button);
+        container.appendChild(resetBtn);
 
         //select prop drop down
         let dropdown = document.createElement("select");
@@ -360,38 +380,41 @@ class FilterMaker {
         container.appendChild(dropdown);
         dropdown.onchange = () => this.makeInput(Object.values(NMaker.data[0])[dropdown.selectedIndex]);
 
-        //create inputs that are dependent on the data type of the prop
-        //they need to be in an input container to be properly re-inserted
+        //create input container, as the input needs to be re-inserted smoothly and also to contain the modifier
         let inputContainer = document.createElement("div");
         inputContainer.id = this.attributes.id + "-input-container";
         inputContainer.classList.add("form-control");
-        container.appendChild(inputContainer);
 
+        //create the modifier
+        // TODO
+        
+        //attach inputContainer to container
+        container.appendChild(inputContainer);
+        
         //create search button
         let search = document.createElement("button");
         search.innerText = "Search";
         search.id = this.attributes.id + "-search";
-        search.onclick = () => this.filter();
+        search.type = "button";
         NMaker.addStylesToElement(search, this.attributes.classes.button);
-        // search.classList.add("col-auto");
-        // search.classList.add("ms-auto");
         container.appendChild(search);
-
+        
         document.querySelector(this.attributes.parentSelector).appendChild(container);
-
-        //make the iniitial input
-        this.makeInput(Object.values(NMaker.data[0])[dropdown.selectedIndex]);
+        
+        //create the input
+        this.makeInput(Object.values(NMaker.data[0])[dropdown.selectedIndex]);       
     }
 
     makeInput(value) {
-        let input = this.replaceElement(this.attributes.id + "-input", "input");
+        let input = NMaker.replaceElement(this.attributes.id + "-input", "input");
 
         switch (typeof value) {
             case "bigint":
             case "number":
                 input.type = "number";
-                input.placeholder = 0;
+                input.placeholder = 0.00;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
+                this.updateSearchBtn("match");
                 break;
             case "undefined":
                 console.error("Value is undefined");
@@ -400,15 +423,18 @@ class FilterMaker {
                 input.type = "text";
                 input.placeholder = "Select...";
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
+                this.updateSearchBtn("match");
                 break;
             case "boolean":
                 input.type = "checkbox";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
+                this.updateSearchBtn("check");
                 break;
             case "object":
                 if (value instanceof Date) {
                     input.type = "date";
                     NMaker.addStylesToElement(input, this.attributes.classes.input);
+                    this.updateSearchBtn("date");
                 }
                 break;
             default:
@@ -417,25 +443,39 @@ class FilterMaker {
         document.getElementById(this.attributes.id + "-input-container").appendChild(input);
     }
 
-    replaceElement(id, kind) {
-        let el = document.getElementById(id);
-        if (el) el.parentElement.removeChild(el);
-        el = document.createElement(kind);
-        el.id = id;
-        return el;
+    updateSearchBtn(value) {
+        let search = document.getElementById(this.attributes.id + "-search");
+        search.onclick = () => this.filter(value);
     }
 
-    filter() {
+    filter(type = null) {
         let dropdown = document.getElementById(this.attributes.id + "-dropdown");
         let prop = NMaker.headings[dropdown.selectedIndex];
-        let term = document.getElementById(this.attributes.id + "-input").value;
+        this.data = NMaker.data;
+        
 
         let filteredData = [];
+        let input = document.getElementById(this.attributes.id + "-input")
+        
         for (let row of this.data) {
-            if (row[prop].toString().includes(term)) filteredData.push(row);
+            if(type == "match") {
+                if (row[prop].toString().toLowerCase().includes(input.value.toLowerCase())) filteredData.push(row);
+            }
+            else if (type == "check") {
+                if(row[prop] == input.checked) filteredData.push(row);
+            }
+            else if (type == "date") {
+                if (Date.parse(row[prop]) == Date.parse(input.value)) filteredData.push(row);
+            }
+            else {
+                console.error("Filter type " + type + " undefined");
+                break;
+            }
         }
 
-        NMaker.currData = filteredData;
+        NMaker.filteredData = filteredData;
+        NMaker.pagedData = filteredData;
         document.dispatchEvent(NMaker.updatedData);
+        document.dispatchEvent(NMaker.updatedPageData);
     }
 }

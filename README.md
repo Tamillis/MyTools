@@ -23,28 +23,33 @@ No sexy screenshot for this one, just go see the file [here](./CsvDownloader/Csv
 ## NMaker Utilities
 My own light JS Front End framework.
 
-The use case is simply: given a single lump of JSON data, have a bunch of tools to manipulate that data.
+The use case is simply: given a single lump of JSON data, have a bunch of tools to efficiently and effectively manipulate that data, giving me full control over it and also cutting down on server calls by a lot.
 
-The `NMaker` static class contains some helper functions as well as doubling as the source of truth for the data under `NMaker.data`.
+The `NMaker` static class contains some helper functions as well as doubling as the source of truth for the data under `NMaker.data`, `NMaker.filteredData` and `NMaker.pagedData`.
 
-All components load from this data, and listen in on the `updateData` event that the `NMaker` sets up on the `document`.
+All components load from this data, and listen in on the `updatedData` and `updatedPagedData` events that the corresponding components set up on the `document`.
 
-The example makes plenty of use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS can be used)
+To use the system, first call `NMaker.init(data)` with your JSON data and then create whatever components you want by instantiating an object of that component.
 
-Ideas:
- - LinkMaker - makes button-like link from given url string and `linkOptions`
- - ButtonMaker - makes button from given function (the onclick function) and `buttonOptions`
- - DropDownMaker - makes a dropdown list from given options
- - PrintMaker - makes a print button that takes in the id of the div to print
- - FileUploadMaker - I don't even know how
- - DynamicFilter - smart feature that allows you to filter the data based on criteria, the kinds of filter presented automatically selected by analysing the data
- - EventManager - ensures that different events communicate with each other and does computation for steps that need it, i.e. if a DropDownMaker's `optionSelected` event needs to cause a response in the data, the `EventManager` does that (this, then would be separate from the components inteded by end user). 
+The objects create their corresponding HTML immediately, but calling `[component].make[Component](attributes)` will remake them, removing them from where they were.
 
-### TableMaker
+The styling defaults make plentiful use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS classes can be used).
 
-The beginnings of my own front-end replacement to Telerik's Grid, giving me full control over it and also cutting down on server calls by a lot.
+#### Common Attributes
+Attributes don't have to be provided, they fall back on defaults.
 
-A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with appropriate json `data` and your desired `attributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. On this object call `makeTable()` and violá.
+| **Attribute** | **Effect** |
+| --- | --- |
+| `id` | The html id of the table generated, defaults to `"[componenet code]" + Date.now()` |
+| `parentSelector` | the css selector for determining the parent element, defaults to `body` |
+| `classes` | the css style classes to apply. Must be an object where each parameter matches the HTML element that you want those classes to apply to, and the value an array of strings of the classes you want to apply. Note if no classes are defined for an element it defaults to the following bootstrap classes, but if any are defined for an element, all defaults for that element are lost:  |
+```js 
+{
+    table : ["table", "table-striped", "table-bordered"],
+    th : ["h5", "align-text-bottom"],
+    td : ["text-body-secondary"]
+}
+```
 
 #### Given well-formed JSON
 ![TableMakerDemo](./Screenshots/TableMakerInitial.png)
@@ -55,23 +60,22 @@ A `TableMaker` object creates the tables that it represents and manages the stat
 #### Then a Table is made
 ![TableMakerResult](/Screenshots/TableMakerDemoResult.png)
 
+#### Ideas:
+ - LinkMaker - makes button-like link from given url string and `linkOptions`
+ - DropDownMaker - makes a dropdown list from given options (currently a hardcoded part of `filterMaker`)
+ - PrintMaker - makes a print button that takes in the id of the div to print
+ - FileUploadMaker - At the least, encorporating CsvDownloader
+
+### TableMaker
+The main component of `NMaker`.
+
+A `TableMaker` object creates the tables that it represents and manages the state of that table. Make a new `TableMaker` with your desired `attributes`, the API that the TableMaker uses to configure the table, defaults and descrtiption below. 
+
 #### TableMaker API
 The tableMaker functions simply: through data provided to the `attributes` input, the table generated can be defined and customised.
 
 | **Attribute** | **Effect** |
 | --- | --- |
-| `id` | The html id of the table generated, defaults to `"t" + Date.now()` |
-| `classes` | the css style classes to apply. Must be an object where each parameter matches the HTML element that you want those classes to apply to, and the value an array of strings of the classes you want to apply. Note if no classes are defined for an element it defaults to the following bootstrap classes, but if any are defined for an element, all defaults for that element are lost:  |
-```js 
-{
-    table : ["table", "table-striped", "table-bordered"],
-    th : ["h5", "align-text-bottom"],
-    td : ["text-body-secondary"]
-}
-```
-| **Attribute** | **Effect** |
-| --- | --- |
-| `parentSelector` | the css selector for determining the parent element, defaults to `body` |
 | `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
 |  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
 | `hide` | an array of strings for the columns that you don't want to be in the table |
