@@ -331,6 +331,7 @@ class FilterMaker {
             classes: {
                 container: ["mb-2", "input-group"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
+                mainInput: ["form-control"],
                 input: ["form-control"],
                 dropdown: ["form-select"],
                 checkbox: ["form-check-input"]
@@ -383,7 +384,7 @@ class FilterMaker {
         //create input container, as the input needs to be re-inserted smoothly and also to contain the modifier
         let inputContainer = document.createElement("div");
         inputContainer.id = this.attributes.id + "-input-container";
-        inputContainer.classList.add("form-control");
+        NMaker.addStylesToElement(inputContainer, this.attributes.classes.mainInput);
 
         //create the modifier
         // TODO
