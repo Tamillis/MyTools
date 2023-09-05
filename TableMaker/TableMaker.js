@@ -154,7 +154,7 @@ class TableMaker {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
         for (let key of NMaker.headings) {
-            if (this.attributes.hide.includes(key)) continue;
+            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
             let th = document.createElement("th");
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
@@ -181,7 +181,7 @@ class TableMaker {
         let tr = tbody.insertRow();
 
         for (let key in data) {
-            if (this.attributes.hide.includes(key)) continue;
+            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
 
             let td = tr.insertCell();
             NMaker.addStylesToElement(td, classes);
