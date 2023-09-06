@@ -1,4 +1,9 @@
 class CsvDownloader {
+    static toCapitalizedWords(name) {
+        var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
+        return words.map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(" ") + " ";
+    }
+
     static IsCsvCompatible(data) {
         if (!Array.isArray(data)) {
             console.error("Data is not an array");
@@ -31,7 +36,7 @@ class CsvDownloader {
         //assuming passed in array of data arr has passed IsCsvCompatible
         //get col headers
         let headings = "";
-        for (let property in arr[0]) headings += property + ",";
+        for (let property in arr[0]) headings += CsvDownloader.toCapitalizedWords(property) + ",";
         headings = headings.slice(0, -1);
         headings += "\n";
 

@@ -62,6 +62,14 @@ class NMaker {
         return btn;
     }
 
+    static makeLink(text, link, classes = null) {
+        let a = document.createElement("a");
+        a.innerText = text;
+        a.href = link;
+        if(classes) NMaker.addStylesToElement(a, classes);
+        return a;
+    }
+
     static init(data) {
         if(!NMaker.IsCompatible(data)) throw new Error("No or invalid JSON provided");
         NMaker.filteredData = [...data];
@@ -80,13 +88,16 @@ class TableMaker {
                 table: ["table", "table-striped", "table-bordered"],
                 heading: ["h5", "align-text-bottom"],
                 row: ["text-body-secondary"],
-                button: ["btn", "btn-sm", "btn-outline-primary", "float-end"]
+                button: ["btn", "btn-sm", "btn-outline-primary", "float-end"],
+                link: ["btn", "btn-sm", "btn-outline-info"]
             },
+            classesIf: false,
             parentSelector: "body",
             sorting: false,
             sortingOrientation: {},
             currency: false,
-            hide: false
+            hide: false,
+            link: false
         };
 
         this.inputData = data;
@@ -186,20 +197,34 @@ class TableMaker {
             let td = tr.insertCell();
             NMaker.addStylesToElement(td, classes);
 
+            //Apply conditional class to tr if condition is met against the cell's data
+            // [prop] == true   // replace [prop] in condition with actual value, i.e. content, 
+
             //FORMAT DATA
             let content = data[key];
-            if (content instanceof Date) content = content.toLocaleDateString();
+
+            //Date
+            if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
 
             //Currency
-            const formatter = new Intl.NumberFormat('en-UK', {
-                style: 'currency',
-                currency: 'GBP',
-            });
+            else if (this.attributes.currency && this.attributes.currency.includes(key)) {
+                const formatter = new Intl.NumberFormat('en-UK', {
+                    style: 'currency',
+                    currency: 'GBP',
+                });
+                content = document.createTextNode(formatter.format(content));
+            }
 
-            if (this.attributes.currency && this.attributes.currency.includes(key)) content = formatter.format(content);
-
-            let text = document.createTextNode(content);
-            td.appendChild(text);
+            //Link
+            else if(this.attributes.link && this.attributes.link.map(l=>l.name).includes(key)) {
+                let linkData = this.attributes.link.filter(l => l.name == key)[0];
+                if(linkData) content = NMaker.makeLink(linkData.text, content, this.attributes.classes.link);
+            }
+            else {
+                content = document.createTextNode(content);
+            }
+            
+            td.appendChild(content);
         }
     }
 
@@ -335,7 +360,8 @@ class FilterMaker {
                 input: ["form-control"],
                 dropdown: ["form-select"],
                 checkbox: ["form-check-input"]
-            }
+            },
+            ignore: false
         };
 
         this.attributes = {
@@ -371,6 +397,7 @@ class FilterMaker {
         let dropdown = document.createElement("select");
         dropdown.id = this.attributes.id + "-dropdown";
         for (let prop in this.data[0]) {
+            if(this.attributes.ignore && this.attributes.ignore.includes(prop)) continue;
             let opt = document.createElement("option");
             opt.value = prop;
             opt.innerText = NMaker.toCapitalizedWords(prop);

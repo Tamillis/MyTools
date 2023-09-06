@@ -44,11 +44,11 @@
 
     <script defer>
         let data = [
-            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest: true },
-            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest: false },
-            { name: "Shaytan", age: 33, dateOfBirth: new Date(666, 6, 6), wealth: 666, isGuest: true },
-            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest: false },
-            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1, 1, 1), wealth: 42, isGuest: false },
+            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest: true, homePage: "https://google.com/search?q=bob" },
+            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest: false, homePage: "https://google.com/search?q=tim"  },
+            { name: "Shaytan", age: 33, dateOfBirth: new Date(666, 6, 6), wealth: 666, isGuest: true, homePage: "https://google.com/search?q=shaytan"  },
+            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest: false, homePage: "https://google.com/search?q=kelly"  },
+            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1, 1, 1), wealth: 42, isGuest: false, homePage: "https://google.com/search?q=reginald"  },
         ];
         document.querySelector("pre").innerText = JSON.stringify(data, null, 2);
         let visible = false;
@@ -79,7 +79,8 @@
             });
 
             let filter = new FilterMaker({
-                parentSelector: "#table-container"
+                parentSelector: "#table-container",
+                ignore: ["homePage"]
             });
 
             let tm = new TableMaker({
@@ -87,7 +88,11 @@
                 parentSelector: "#table-container",
                 sorting: ["name", "age", "dateOfBirth", "wealth"],
                 hide: ["isGuest"],
-                currency: ["wealth"]
+                currency: ["wealth"],
+                link: [{
+                    name: "homePage",
+                    text: "View homepage"
+                }]
             });
         }
     </script>

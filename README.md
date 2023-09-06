@@ -44,10 +44,11 @@ Attributes don't have to be provided, they fall back on defaults.
 | `parentSelector` | the css selector for determining the parent element, defaults to `body` |
 | `classes` | the css style classes to apply. Must be an object where each parameter matches the HTML element that you want those classes to apply to, and the value an array of strings of the classes you want to apply. Note if no classes are defined for an element it defaults to the following bootstrap classes, but if any are defined for an element, all defaults for that element are lost:  |
 ```js 
-{
-    table : ["table", "table-striped", "table-bordered"],
-    th : ["h5", "align-text-bottom"],
-    td : ["text-body-secondary"]
+classes: {
+    table: ["table", "table-striped", "table-bordered"],
+    heading: ["h5", "align-text-bottom"],
+    row: ["text-body-secondary"],
+    button: ["btn", "btn-sm", "btn-outline-primary", "float-end"]
 }
 ```
 
@@ -64,7 +65,8 @@ Attributes don't have to be provided, they fall back on defaults.
  - LinkMaker - makes button-like link from given url string and `linkOptions`
  - DropDownMaker - makes a dropdown list from given options (currently a hardcoded part of `filterMaker`)
  - PrintMaker - makes a print button that takes in the id of the div to print
- - FileUploadMaker - At the least, encorporating CsvDownloader
+ - FileUploadMaker - uploader, not downloader idiot
+ - DynamicTextInputMaker - name tbc, but a text input whose size updates according to the amount of text input so you never lose track of what you're writing.
 
 ### TableMaker
 The main component of `NMaker`.
@@ -79,6 +81,7 @@ The tableMaker functions simply: through data provided to the `attributes` input
 | `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
 |  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
 | `hide` | an array of strings for the columns that you don't want to be in the table |
+| `link` | an array of objects of two properties: `name` that denotes the column to be effected and `text` which denotes the text of the link. The actual link's `href` is the data of the column so that ought to be valid href data  |
 
 
 TODO:
