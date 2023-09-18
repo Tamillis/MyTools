@@ -93,3 +93,6 @@ To Explain, but the code is up.
 
 ### FilterMaker
 A dynamic filtering component.
+
+String Modifiers:
+- excluding
