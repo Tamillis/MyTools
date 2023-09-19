@@ -51,12 +51,13 @@ class NMaker {
         if (el) el.parentElement.removeChild(el);
         el = document.createElement(kind);
         el.id = id;
-        if(styles) NMaker.addStylesToElement(el, styles);
+        if (styles) NMaker.addStylesToElement(el, styles);
         return el;
     }
 
-    static makeBtn(name, fn, classes = null) {
+    static makeBtn(id, name, fn, classes = null) {
         let btn = document.createElement("button");
+        btn.id = id;
         btn.innerText = name;
         btn.onclick = fn;
         if (classes) NMaker.addStylesToElement(btn, classes);
@@ -69,6 +70,44 @@ class NMaker {
         a.href = link;
         if (classes) NMaker.addStylesToElement(a, classes);
         return a;
+    }
+
+    static makeDateRangePicker(id, classes) {
+        //some defaults
+        let today = new Date();
+        let nextweek = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
+        let getDateValue = (t) => t.toISOString().split('T')[0];    //courtesy of https://stackoverflow.com/questions/28729634/set-values-in-input-type-date-and-time-in-javascript
+
+        //replace or make the container
+        let dateRangePicker = NMaker.replaceElement(id, "div");
+        NMaker.addStylesToElement(dateRangePicker, classes.inputGroup);
+
+        //make from Date input
+        let fromDateInput = document.createElement("input");
+        fromDateInput.type = "date";
+        fromDateInput.value = getDateValue(today);
+        dateRangePicker.dataset.fromDate = getDateValue(today);
+        NMaker.addStylesToElement(fromDateInput, classes.input);
+        fromDateInput.onchange = () => dateRangePicker.dataset.fromDate = fromDateInput.value;
+
+        //make to Date input
+        let toDateInput = document.createElement("input");
+        toDateInput.type = "date";
+        toDateInput.value = getDateValue(nextweek);
+        dateRangePicker.dataset.toDate = getDateValue(nextweek);
+        NMaker.addStylesToElement(toDateInput, classes.input);
+        toDateInput.onchange = () => dateRangePicker.dataset.toDate = toDateInput.value;
+
+        let toDateLabel = document.createElement("label");
+        toDateLabel.innerText = "→";
+        toDateLabel.for = toDateInput.id;
+        NMaker.addStylesToElement(toDateLabel, classes.label);
+
+        dateRangePicker.appendChild(fromDateInput);
+        dateRangePicker.appendChild(toDateLabel);
+        dateRangePicker.appendChild(toDateInput);
+
+        return dateRangePicker;
     }
 
     static init(data) {
@@ -134,7 +173,7 @@ class TableMaker {
         };
 
         let name = this.attributes.sortingOrientation[column] == "asc" ? "↑" : "↓";
-        return NMaker.makeBtn(name, () => {
+        return NMaker.makeBtn(this.attributes.id + "-" + column, name, () => {
             let btnKind = this.attributes.sortingOrientation[column];  //the state of the button, "asc" or "desc"
             //invert the state
             this.attributes.sortingOrientation[column] = btnKind == "asc" ? "desc" : "asc";
@@ -175,11 +214,11 @@ class TableMaker {
 
             let headingContainer = document.createElement("div");
             NMaker.addStylesToElement(headingContainer, this.attributes.classes.headingContainer);
-            
+
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
             span.innerText = NMaker.toCapitalizedWords(key);
-            
+
             headingContainer.appendChild(span);
             th.appendChild(headingContainer);
             row.appendChild(th);
@@ -317,7 +356,7 @@ class PaginatorMaker {
         NMaker.addStylesToElement(container, this.attributes.classes.container);
 
         //previous button
-        let prevBtn = NMaker.makeBtn("<-", () => {
+        let prevBtn = NMaker.makeBtn("prevBtn","<-", () => {
             this.page--;
             if (this.page < 1) this.page = 1;
             NMaker.pagedData = this.getPagedData();
@@ -336,7 +375,7 @@ class PaginatorMaker {
         container.appendChild(pageDisplay);
 
         //next button
-        let nextBtn = NMaker.makeBtn("->", () => {
+        let nextBtn = NMaker.makeBtn("nextBtn","->", () => {
             this.page++;
             if (this.page > this.pages) this.page = this.pages;
             NMaker.pagedData = this.getPagedData();
@@ -446,18 +485,12 @@ class FilterMaker {
         let inputGroup = this.makeContainer(this.attributes.id + "-input-group", this.attributes.classes.inputGroup);
 
         //make the search button part of the selection container
-        let searchBtn = this.makeSearchBtn();
+        let searchBtn = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
 
         inputGroup.appendChild(searchBtn);
         inputContainer.appendChild(inputGroup);
 
         return inputContainer;
-    }
-
-    makeSearchBtn() {
-        let searchBtn = NMaker.makeBtn("Search", () => null, this.attributes.classes.button);
-        searchBtn.id = this.attributes.id + "-search";
-        return searchBtn;
     }
 
     makeContainer(id, classes) {
@@ -472,10 +505,10 @@ class FilterMaker {
         let selectionContainer = this.makeContainer(this.attributes.id + "-selection-container", this.attributes.classes.selectionContainer);
 
         //button and selector input group
-        let selectionInputGroup = this.makeContainer(this.attributes.id+"-selection-group", this.attributes.classes.inputGroup);
+        let selectionInputGroup = this.makeContainer(this.attributes.id + "-selection-group", this.attributes.classes.inputGroup);
 
         //reset button
-        let resetBtn = NMaker.makeBtn("↺", () => {
+        let resetBtn = NMaker.makeBtn(this.attributes.id = "-reset", "↺", () => {
             this.makeInput();
             NMaker.filteredData = NMaker.data;
             NMaker.pagedData = NMaker.data;
@@ -509,9 +542,9 @@ class FilterMaker {
             else {
                 let priorValue = document.getElementById(this.attributes.id + "-input") ? document.getElementById(this.attributes.id + "-input").value : null;
                 this.makeBasicInput();
-                if(priorValue) document.getElementById(this.attributes.id + "-input").value = priorValue;
+                if (priorValue) document.getElementById(this.attributes.id + "-input").value = priorValue;
             }
-            
+
             document.getElementById(this.attributes.id + "-search").onclick = () => this.filter(modifier.value);
         }
         NMaker.addStylesToElement(modifier, this.attributes.classes.modifier);
@@ -535,8 +568,8 @@ class FilterMaker {
     }
 
     makeFilterInput() {
-        let value = NMaker.data[0][document.getElementById(this.attributes.id+"-selector").value];
-        
+        let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
+
         this.makeBasicInput(value);
 
         if (this.attributes.useModifier) {
@@ -591,7 +624,7 @@ class FilterMaker {
     }
 
     makeBasicInput(value) {
-        if(!value) value = NMaker.data[0][document.getElementById(this.attributes.id+"-selector").value];
+        if (!value) value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
 
         //remove old input / inputs by clearing input-group
         let inputGroup = NMaker.replaceElement(this.attributes.id + "-input-group", "div", this.attributes.classes.inputGroup);
@@ -601,8 +634,7 @@ class FilterMaker {
         input.id = this.attributes.id + "-input";
 
         //and a search button
-        let search = NMaker.makeBtn("Search", () => null, this.attributes.classes.button);
-        search.id = this.attributes.id + "-search";
+        let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
 
         switch (typeof value) {
             case "bigint":
@@ -649,47 +681,14 @@ class FilterMaker {
     }
 
     makeDateRangeInput() {
-        //some defaults
-        let today = new Date();
-        let nextweek = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
-        let getDateValue = (t) => t.toISOString().split('T')[0];    //courtesy of https://stackoverflow.com/questions/28729634/set-values-in-input-type-date-and-time-in-javascript
+        let dateRangePicker = NMaker.makeDateRangePicker(this.attributes.id + "-input-group", this.attributes.classes);
 
-        //replace the whole input-group (including search btn)
-        let inputGroup = NMaker.replaceElement(this.attributes.id + "-input-group", "div");
-        NMaker.addStylesToElement(inputGroup, this.attributes.classes.inputGroup);
-
-        //make from Date input
-        let fromDateInput = document.createElement("input");
-        fromDateInput.type = "date";
-        fromDateInput.value = getDateValue(today);
-        inputGroup.dataset.fromDate = getDateValue(today);
-        NMaker.addStylesToElement(fromDateInput, this.attributes.classes.input);
-        fromDateInput.onchange = () => inputGroup.dataset.fromDate = fromDateInput.value;
-
-        //make to Date input
-        let toDateInput = document.createElement("input");
-        toDateInput.type = "date";
-        toDateInput.id = this.attributes.id + "-toDate";
-        toDateInput.value = getDateValue(nextweek);
-        inputGroup.dataset.toDate = getDateValue(nextweek);
-        NMaker.addStylesToElement(toDateInput, this.attributes.classes.input);
-        toDateInput.onchange = () => inputGroup.dataset.toDate = toDateInput.value;
-
-        let toDateLabel = document.createElement("label");
-        toDateLabel.innerText = "→";
-        toDateLabel.for = toDateInput.id;
-        NMaker.addStylesToElement(toDateLabel, this.attributes.classes.label);
-
-        inputGroup.appendChild(fromDateInput);
-        inputGroup.appendChild(toDateLabel);
-        inputGroup.appendChild(toDateInput);
-
-        let search = this.makeSearchBtn();
+        let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
         search.onclick = () => this.filter(this.modifierOptions.dateRange);
-        inputGroup.appendChild(search);
+        dateRangePicker.appendChild(search);
 
         //append input group to input container
-        document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
+        document.getElementById(this.attributes.id + "-input-container").appendChild(dateRangePicker);
     }
 
     filter(type = null) {

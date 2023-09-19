@@ -34,15 +34,14 @@
 
     <div class="row">
         <div class="btn-group" role="group">
-            <button onclick="showRaw(this)" class="btn btn-outline-danger">Show Raw Data</button>
-            <button onclick="makeTable()" class="btn btn-outline-secondary">Make Table</button>
+            <button onclick="showRaw(this)" class="btn btn-outline-danger" disabled>Show Raw Data</button>
+            <button onclick="makeTable()" class="btn btn-outline-secondary" disabled>Make Table</button>
         </div>
     </div>
 
     <div class="row">
         <p id="info" hidden></p>
     </div>
-
 
     <div id="paginator-container" class="row"></div>
     <div id="table-container" class="row"></div>
@@ -69,6 +68,8 @@
                 content += JSON.stringify(datum, null, 2);
             }
             document.querySelector("#info").innerText = content;
+
+            for(let btn of document.querySelectorAll("button")) btn.disabled = false;
         });
 
         let visible = false;
