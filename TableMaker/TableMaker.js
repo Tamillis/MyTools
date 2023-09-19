@@ -356,7 +356,7 @@ class PaginatorMaker {
         NMaker.addStylesToElement(container, this.attributes.classes.container);
 
         //previous button
-        let prevBtn = NMaker.makeBtn("prevBtn","<-", () => {
+        let prevBtn = NMaker.makeBtn("prevBtn", "<-", () => {
             this.page--;
             if (this.page < 1) this.page = 1;
             NMaker.pagedData = this.getPagedData();
@@ -375,7 +375,7 @@ class PaginatorMaker {
         container.appendChild(pageDisplay);
 
         //next button
-        let nextBtn = NMaker.makeBtn("nextBtn","->", () => {
+        let nextBtn = NMaker.makeBtn("nextBtn", "->", () => {
             this.page++;
             if (this.page > this.pages) this.page = this.pages;
             NMaker.pagedData = this.getPagedData();
@@ -404,13 +404,14 @@ class FilterMaker {
             greaterThan: ">",
             lessThan: "<",
             not: "Not",
-            match: "Match",
+            match: "Matches",
             contains: "Contains",
             startsWith: "Starts with",
             excludes: "Excludes",
             date: "Date",
             dateRange: "From -> To",
-            boolean: "Boolean"
+            boolean: "Boolean",
+            select: "Select"
         });
 
         this.attributeDefaults = {
@@ -433,7 +434,7 @@ class FilterMaker {
             useModifier: false,
             modifier: {
                 number: [this.modifierOptions.equals, this.modifierOptions.greaterThan, this.modifierOptions.lessThan, this.modifierOptions.not],
-                string: [this.modifierOptions.match, this.modifierOptions.contains, this.modifierOptions.startsWith, this.modifierOptions.excludes],
+                string: [this.modifierOptions.match, this.modifierOptions.contains, this.modifierOptions.startsWith, this.modifierOptions.excludes, this.modifierOptions.select],
                 date: [this.modifierOptions.date, this.modifierOptions.dateRange],
                 boolean: [this.modifierOptions.boolean]
             }
@@ -508,7 +509,7 @@ class FilterMaker {
         let selectionInputGroup = this.makeContainer(this.attributes.id + "-selection-group", this.attributes.classes.inputGroup);
 
         //reset button
-        let resetBtn = NMaker.makeBtn(this.attributes.id = "-reset", "↺", () => {
+        let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
             this.makeInput();
             NMaker.filteredData = NMaker.data;
             NMaker.pagedData = NMaker.data;
@@ -539,6 +540,7 @@ class FilterMaker {
         modifier.id = this.attributes.id + "-modifier";
         modifier.onchange = () => {
             if (modifier.value == this.modifierOptions.dateRange) this.makeDateRangeInput();
+            else if (modifier.value == this.modifierOptions.select) this.makeSelectInput();
             else {
                 let priorValue = document.getElementById(this.attributes.id + "-input") ? document.getElementById(this.attributes.id + "-input").value : null;
                 this.makeBasicInput();
@@ -691,6 +693,30 @@ class FilterMaker {
         document.getElementById(this.attributes.id + "-input-container").appendChild(dateRangePicker);
     }
 
+    makeSelectInput() {
+        //remove old input / inputs by clearing input-group
+        let inputGroup = NMaker.replaceElement(this.attributes.id + "-input-group", "div", this.attributes.classes.inputGroup);
+
+        //basic input is only one input element so make that
+        let input = document.createElement("select");
+        input.id = this.attributes.id + "-input";
+        NMaker.addStylesToElement(input, this.attributes.classes.selector);
+
+        let option = document.getElementById(this.attributes.id + "-selector").value;
+        let options = Array.from(new Set(NMaker.data.map(d => d[option])));
+        this.attachOptions(input, options);
+
+        inputGroup.appendChild(input);
+
+        //and a search button
+        let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
+        search.onclick = () => this.filter(this.modifierOptions.match);
+        inputGroup.appendChild(search);
+
+        //append input group to input container
+        document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
+    }
+
     filter(type = null) {
         let selector = document.getElementById(this.attributes.id + "-selector");
         let prop = selector.value;
@@ -713,6 +739,7 @@ class FilterMaker {
                     break;
                 case this.modifierOptions.match:
                 case this.modifierOptions.equals:
+                case this.modifierOptions.select:
                     if (row[prop].toString().toLowerCase() == input.value.toLowerCase()) filteredData.push(row);
                     break;
                 case this.modifierOptions.not:
