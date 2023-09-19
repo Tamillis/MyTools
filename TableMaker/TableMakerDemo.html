@@ -10,13 +10,18 @@
             margin: 0px;
             padding: 0px;
             box-sizing: border-box;
-            height: 100vh;
+            min-height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             gap: 1rem;
+        }
+
+        #info {
+            inline-size: 80vw;
+            overflow-wrap: break-word;
         }
     </style>
     <script src="TableMaker.js" defer></script>
@@ -35,7 +40,7 @@
     </div>
 
     <div class="row">
-        <pre id="info" hidden></pre>
+        <p id="info" hidden></p>
     </div>
 
 
@@ -43,26 +48,41 @@
     <div id="table-container" class="row"></div>
 
     <script defer>
-        let data = [
-            { name: "Bob", age: 21, dateOfBirth: new Date(1993, 1, 1), wealth: 123456, isGuest: true, homePage: "https://google.com/search?q=bob" },
-            { name: "Tim", age: 19, dateOfBirth: new Date(2001, 1, 1), wealth: 1.1111, isGuest: false, homePage: "https://google.com/search?q=tim"  },
-            { name: "Shaytan", age: 33, dateOfBirth: new Date(666, 6, 6), wealth: 666, isGuest: true, homePage: "https://google.com/search?q=shaytan"  },
-            { name: "Kelly", age: 33, dateOfBirth: new Date(1930, 12, 21), wealth: 1000000000, isGuest: false, homePage: "https://google.com/search?q=kelly"  },
-            { name: "Reginald", age: 1_000_000, dateOfBirth: new Date(1, 1, 1), wealth: 42, isGuest: false, homePage: "https://google.com/search?q=reginald"  },
-        ];
-        document.querySelector("pre").innerText = JSON.stringify(data, null, 2);
+        //courtesy https://stackoverflow.com/questions/27012854/how-to-change-iso-date-string-to-date-object
+        function parseISOString(s) {
+        var b = s.split(/\D+/);
+        return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+        }
+        // courtesy https://stackoverflow.com/questions/559112/how-to-convert-a-currency-string-to-a-double-with-javascript
+        function parseCurrency(currency) {
+            return Number(currency.replace(/[^0-9.-]+/g,""));
+        }
+        let data;
+
+        //first of all any JSON data read in would have to be pre-processed to be "valid", i.e. the difference between a JSON text file and the equivilant POJO
+        fetch("./exampleData.json").then(res => res.json()).then(val => {
+            data = val;
+            let content = "";
+            for(let datum of data) {
+                datum["registered"] = parseISOString(datum["registered"]);
+                datum["balance"] = parseCurrency(datum["balance"]);   
+                content += JSON.stringify(datum, null, 2);
+            }
+            document.querySelector("#info").innerText = content;
+        });
+
         let visible = false;
         let i = 1;
 
         function showRaw(el) {
             visible = !visible;
-            let pre = document.querySelector("pre");
+            let info = document.querySelector("#info");
             if (visible) {
-                pre.hidden = false;
+                info.hidden = false;
                 el.innerText = "Hide Raw Data";
             }
             else {
-                pre.hidden = true;
+                info.hidden = true;
                 el.innerText = "Show Raw Data"
             }
         }
@@ -75,24 +95,24 @@
             let pm = new PaginatorMaker({
                 id : "newPaginator",
                 parentSelector: "#paginator-container",
-                pageLength: 4
+                pageLength: 5
             });
 
             let filter = new FilterMaker({
                 parentSelector: "#table-container",
-                ignore: ["homePage"],
+                ignore: ["picture", "about"],
                 useModifier: true
             });
 
             let tm = new TableMaker({
                 id: "newTable",
                 parentSelector: "#table-container",
-                sorting: ["name", "age", "dateOfBirth", "wealth"],
-                hide: ["isGuest"],
-                currency: ["wealth"],
+                sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
+                hide: ["about"],
+                currency: ["balance"],
                 link: [{
-                    name: "homePage",
-                    text: "View homepage"
+                    name: "picture",
+                    text: "See picture"
                 }]
             });
         }
