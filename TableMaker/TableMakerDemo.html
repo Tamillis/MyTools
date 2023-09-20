@@ -114,7 +114,20 @@
                 link: [{
                     name: "picture",
                     text: "See picture"
-                }]
+                }],
+                conditionalClasses : {
+                    gender : {
+                        condition : "gender == 'male'",
+                        target : "row",
+                        classesIf : ["table-info"],
+                        classesNot : ["table-danger"]
+                    },
+                    balance : {
+                        condition : "balance < 2000",
+                        target : "cell",
+                        classesIf : ["text-decoration-underline"]
+                    }
+                }
             });
         }
     </script>

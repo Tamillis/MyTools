@@ -125,14 +125,14 @@ class TableMaker {
         this.attributeDefaults = {
             id: "t" + Date.now(),
             classes: {
-                table: ["table", "table-striped", "table-bordered"],
-                heading: ["h5", "align-text-bottom", "flex-fill", "me-2"],
+                table: ["table", "table-bordered"],
+                heading: ["h6", "align-text-bottom", "flex-fill", "me-2"],
                 headingContainer: ["d-flex", "flex-row"],
-                row: ["text-body-secondary"],
+                row: ["text-secondary"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
-            classesIf: false,
+            conditionalClasses: false,
             parentSelector: "body",
             sorting: false,
             sortingOrientation: {},
@@ -246,8 +246,22 @@ class TableMaker {
             let td = tr.insertCell();
             NMaker.addStylesToElement(td, classes);
 
-            //Apply conditional class to tr if condition is met against the cell's data
-            // [prop] == true   // replace [prop] in condition with actual value, i.e. content, 
+            // Apply conditional class to tr of td if condition is met against the cell's data
+            // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
+            if(this.attributes.conditionalClasses[key]) {
+                let cc = {...this.attributes.conditionalClasses[key]};
+                
+                cc.condition = cc.condition.replace(key, JSON.stringify(data[key]));
+
+                if(eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
+                    if(cc.target == "row") NMaker.addStylesToElement(tr, cc.classesIf);
+                    else if(cc.target == "cell") NMaker.addStylesToElement(td, cc.classesIf);
+                }
+                else if (cc.classesNot) {
+                    if(cc.target == "row") NMaker.addStylesToElement(tr, cc.classesNot);
+                    else if(cc.target == "cell") NMaker.addStylesToElement(td, cc.classesNot);
+                }
+            }
 
             //FORMAT DATA
             let content = data[key];
@@ -434,7 +448,7 @@ class FilterMaker {
             useModifier: false,
             modifier: {
                 number: [this.modifierOptions.equals, this.modifierOptions.greaterThan, this.modifierOptions.lessThan, this.modifierOptions.not],
-                string: [this.modifierOptions.match, this.modifierOptions.contains, this.modifierOptions.startsWith, this.modifierOptions.excludes, this.modifierOptions.select],
+                string: [this.modifierOptions.contains, this.modifierOptions.select, this.modifierOptions.startsWith, this.modifierOptions.match, this.modifierOptions.excludes],
                 date: [this.modifierOptions.date, this.modifierOptions.dateRange],
                 boolean: [this.modifierOptions.boolean]
             }
@@ -581,28 +595,28 @@ class FilterMaker {
 
     makeModifierOptions(value) {
         //populate Modifier options
-        let selector = document.getElementById(this.attributes.id + "-modifier");
+        let modifier = document.getElementById(this.attributes.id + "-modifier");
 
         //first clear old options
-        while (selector.firstChild) {
-            selector.removeChild(selector.lastChild);
+        while (modifier.firstChild) {
+            modifier.removeChild(modifier.lastChild);
         }
 
         //then add options according to selected data type
         switch (typeof value) {
             case "bigint":
             case "number":
-                this.attachOptions(selector, this.attributes.modifier.number);
+                this.attachOptions(modifier, this.attributes.modifier.number);
                 break;
             case "string":
-                this.attachOptions(selector, this.attributes.modifier.string);
+                this.attachOptions(modifier, this.attributes.modifier.string);
                 break;
             case "boolean":
-                this.attachOptions(selector, this.attributes.modifier.boolean);
+                this.attachOptions(modifier, this.attributes.modifier.boolean);
                 break;
             case "object":
                 if (value instanceof Date) {
-                    this.attachOptions(selector, this.attributes.modifier.date);
+                    this.attachOptions(modifier, this.attributes.modifier.date);
                 }
                 else console.error("Invalid object value found");
                 break;
