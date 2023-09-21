@@ -5,7 +5,7 @@ The use case is simply: given a single lump of tabular JSON data, have a bunch o
 
 The `NMaker` static class contains some helper functions as well as doubling as the source of truth for the data under `NMaker.data`, `NMaker.filteredData` and `NMaker.pagedData`.
 
-All components load from this data, and listen in on the `updatedData` and `updatedPagedData` events that the corresponding components set up on the `document`.
+All components load from this data, and listen in on the `updatedData` and `updatedPagedData` events that the corresponding components set up on the `NMaker` object.
 
 To use the system, first call `NMaker.init(data)` with your tabular JSON data and then create whatever components you want by instantiating an object of that component.
 
@@ -127,7 +127,7 @@ In what way the presented data will be filtered, depending on the modifier. If n
 | --- | --- |
 | `ignore` | Headings to not include in the filter. |
 | `useModifier` | `true` or `false` |
-| `modifier` | What modification options are available where each property on the object is the data type to present those options for. Options, to prevent errors, are kept in pseudo-enum `modifierOptions`. See below |
+| `modifier` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `modifierOptions`. See below |
 
 
 ``` js
@@ -149,7 +149,7 @@ classes: {
 
 ```js
 // modifier options pseudo-enum
-modifierOptions = Object.freeze({
+NMaker.modifierOptions = Object.freeze({
     equals: "=",
     greaterThan: ">",
     lessThan: "<",

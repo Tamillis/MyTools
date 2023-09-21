@@ -35,7 +35,8 @@
     <div class="row">
         <div class="btn-group" role="group">
             <button onclick="showRaw(this)" class="btn btn-outline-danger" disabled>Show Raw Data</button>
-            <button onclick="makeTable()" class="btn btn-outline-secondary" disabled>Make Table</button>
+            <button onclick="makeDefaults()" class="btn btn-outline-secondary" disabled>Make Default Table</button>
+            <button onclick="makeTailored()" class="btn btn-outline-secondary" disabled>Make Tailored Table</button>
         </div>
     </div>
 
@@ -49,31 +50,35 @@
     <script defer>
         //courtesy https://stackoverflow.com/questions/27012854/how-to-change-iso-date-string-to-date-object
         function parseISOString(s) {
-        var b = s.split(/\D+/);
-        return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
+            var b = s.split(/\D+/);
+            return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
         }
         // courtesy https://stackoverflow.com/questions/559112/how-to-convert-a-currency-string-to-a-double-with-javascript
         function parseCurrency(currency) {
-            return Number(currency.replace(/[^0-9.-]+/g,""));
+            return Number(currency.replace(/[^0-9.-]+/g, ""));
         }
+
         let data;
 
         //first of all any JSON data read in would have to be pre-processed to be "valid", i.e. the difference between a JSON text file and the equivilant POJO
+        //It is a given that the data is tabular (an array of objects that have the same properties and the same data types in those properties)
         fetch("./exampleData.json").then(res => res.json()).then(val => {
             data = val;
             let content = "";
-            for(let datum of data) {
+            for (let datum of data) {
                 datum["registered"] = parseISOString(datum["registered"]);
-                datum["balance"] = parseCurrency(datum["balance"]);   
+                datum["balance"] = parseCurrency(datum["balance"]);
                 content += JSON.stringify(datum, null, 2);
             }
             document.querySelector("#info").innerText = content;
 
-            for(let btn of document.querySelectorAll("button")) btn.disabled = false;
+            for (let btn of document.querySelectorAll("button")) btn.disabled = false;
         });
 
         let visible = false;
-        let i = 1;
+        let paginator;
+        let filter;
+        let table;
 
         function showRaw(el) {
             visible = !visible;
@@ -88,24 +93,46 @@
             }
         }
 
-        function makeTable() {
-            if (i++ > 1) return;
+        function removeOld(component) {
+            if (component) {
+                let el = document.getElementById(component.attributes.id);
+                el.remove();
+            }
+        }
 
+        function makeTailored() {
+            removeOld(paginator);
+            removeOld(filter);
+            removeOld(table);
+
+            makeSuiteTailored();
+        }
+
+        function makeDefaults() {
+            removeOld(paginator);
+            removeOld(filter);
+            removeOld(table);
+            delete NMaker;
+
+            makeSuiteDefaults();
+        }
+
+        function makeSuiteTailored() {
             NMaker.init(data);
 
-            let pm = new PaginatorMaker({
-                id : "newPaginator",
+            paginator = new PaginatorMaker({
+                id: "newPaginator",
                 parentSelector: "#paginator-container",
                 pageLength: 5
             });
 
-            let filter = new FilterMaker({
+            filter = new FilterMaker({
                 parentSelector: "#table-container",
                 ignore: ["picture", "about"],
                 useModifier: true
             });
 
-            let tm = new TableMaker({
+            table = new TableMaker({
                 id: "newTable",
                 parentSelector: "#table-container",
                 sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
@@ -115,20 +142,27 @@
                     name: "picture",
                     text: "See picture"
                 }],
-                conditionalClasses : {
-                    gender : {
-                        condition : "gender == 'male'",
-                        target : "row",
-                        classesIf : ["table-info"],
-                        classesNot : ["table-danger"]
+                conditionalClasses: {
+                    gender: {
+                        condition: "gender == 'male'",
+                        target: "row",
+                        classesIf: ["table-info"],
+                        classesNot: ["table-danger"]
                     },
-                    balance : {
-                        condition : "balance < 2000",
-                        target : "cell",
-                        classesIf : ["text-decoration-underline"]
+                    balance: {
+                        condition: "balance < 2000",
+                        target: "cell",
+                        classesIf: ["text-decoration-underline"]
                     }
                 }
             });
+        }
+
+        function makeSuiteDefaults() {
+            NMaker.init(data);
+            paginator = new PaginatorMaker();
+            filter = new FilterMaker();
+            table = new TableMaker();
         }
     </script>
 </body>

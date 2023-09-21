@@ -3,6 +3,25 @@ class NMaker {
     static updatedPageData = new Event("updatedPageData");
     static data = [];
     static filteredData = [];
+    static modifierOptions = Object.freeze({
+        equals: "=",
+        greaterThan: ">",
+        lessThan: "<",
+        not: "Not",
+        match: "Matches",
+        contains: "Contains",
+        startsWith: "Starts with",
+        excludes: "Excludes",
+        date: "Date",
+        dateRange: "From -> To",
+        boolean: "Boolean",
+        select: "Select"
+    });
+
+    static table;
+    static filter;
+    static paginator;
+
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
     static toCapitalizedWords(name) {
         var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
@@ -123,7 +142,7 @@ class TableMaker {
     constructor(attributes = {}) {
         //Defaults
         this.attributeDefaults = {
-            id: "t" + Date.now(),
+            id: "t-" + Date.now(),
             classes: {
                 table: ["table", "table-bordered"],
                 heading: ["h6", "align-text-bottom", "flex-fill", "me-2"],
@@ -155,9 +174,11 @@ class TableMaker {
             ...attributes.classes
         }
 
+        NMaker.table = this;
+        
         document.addEventListener("updatedPageData", (e) => {
             this.data = NMaker.pagedData;
-            this.makeTable();
+            NMaker.table.makeTable();
         });
 
         document.dispatchEvent(NMaker.updatedPageData);
@@ -313,11 +334,12 @@ class TableMaker {
 }
 
 class PaginatorMaker {
-    constructor(attributes) {
+    constructor(attributes = {}) {
         // Defaults
         this.attributeDefaults = {
-            id: "paginatorMaker" + Date.now(),
-            pageLength: 2,
+            id: "paginatorMaker-" + Date.now(),
+            parentSelector: "body",
+            pageLength: 50,
             classes: {
                 container: ["navbar", "navbar-expand-sm"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
@@ -340,11 +362,13 @@ class PaginatorMaker {
         this.page = 1;
         this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
 
+        NMaker.paginator = this;
+
         document.addEventListener("updatedData", (e) => {
             this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
             this.page = 1;
             NMaker.pagedData = this.getPagedData();
-            this.makePaginator();
+            NMaker.paginator.makePaginator();
         });
 
         document.dispatchEvent(NMaker.updatedData);
@@ -412,22 +436,7 @@ class PaginatorMaker {
 }
 
 class FilterMaker {
-    constructor(attributes) {
-        this.modifierOptions = Object.freeze({
-            equals: "=",
-            greaterThan: ">",
-            lessThan: "<",
-            not: "Not",
-            match: "Matches",
-            contains: "Contains",
-            startsWith: "Starts with",
-            excludes: "Excludes",
-            date: "Date",
-            dateRange: "From -> To",
-            boolean: "Boolean",
-            select: "Select"
-        });
-
+    constructor(attributes = {}) {
         this.attributeDefaults = {
             id: "filter-" + Date.now(),
             parentSelector: "body",
@@ -447,10 +456,10 @@ class FilterMaker {
             ignore: false,
             useModifier: false,
             modifier: {
-                number: [this.modifierOptions.equals, this.modifierOptions.greaterThan, this.modifierOptions.lessThan, this.modifierOptions.not],
-                string: [this.modifierOptions.contains, this.modifierOptions.select, this.modifierOptions.startsWith, this.modifierOptions.match, this.modifierOptions.excludes],
-                date: [this.modifierOptions.date, this.modifierOptions.dateRange],
-                boolean: [this.modifierOptions.boolean]
+                number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not],
+                string: [NMaker.modifierOptions.contains, NMaker.modifierOptions.select, NMaker.modifierOptions.startsWith, NMaker.modifierOptions.match, NMaker.modifierOptions.excludes],
+                date: [NMaker.modifierOptions.date, NMaker.modifierOptions.dateRange],
+                boolean: [NMaker.modifierOptions.boolean]
             }
         };
 
@@ -553,8 +562,8 @@ class FilterMaker {
         let modifier = document.createElement("select");
         modifier.id = this.attributes.id + "-modifier";
         modifier.onchange = () => {
-            if (modifier.value == this.modifierOptions.dateRange) this.makeDateRangeInput();
-            else if (modifier.value == this.modifierOptions.select) this.makeSelectInput();
+            if (modifier.value == NMaker.modifierOptions.dateRange) this.makeDateRangeInput();
+            else if (modifier.value == NMaker.modifierOptions.select) this.makeSelectInput();
             else {
                 let priorValue = document.getElementById(this.attributes.id + "-input") ? document.getElementById(this.attributes.id + "-input").value : null;
                 this.makeBasicInput();
@@ -658,7 +667,7 @@ class FilterMaker {
                 input.type = "number";
                 input.placeholder = 0.00;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
-                search.onclick = () => this.filter(this.modifierOptions.match);
+                search.onclick = () => this.filter(NMaker.modifierOptions.match);
                 break;
             case "undefined":
                 console.error("Value is undefined");
@@ -667,19 +676,19 @@ class FilterMaker {
                 input.type = "text";
                 input.placeholder = "Select...";
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
-                search.onclick = () => this.filter(this.modifierOptions.match);
+                search.onclick = () => this.filter(NMaker.modifierOptions.contains);
                 break;
             case "boolean":
                 input.type = "checkbox";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
-                search.onclick = () => this.filter(this.modifierOptions.boolean);
+                search.onclick = () => this.filter(NMaker.modifierOptions.boolean);
                 break;
             case "object":
                 if (value instanceof Date) {
                     input.type = "date";
                     input.value = new Date().toISOString().split('T')[0];
                     NMaker.addStylesToElement(input, this.attributes.classes.input);
-                    search.onclick = () => this.filter(this.modifierOptions.date);
+                    search.onclick = () => this.filter(NMaker.modifierOptions.date);
                 }
                 else console.error("Invalid object value found");
                 break;
@@ -700,7 +709,7 @@ class FilterMaker {
         let dateRangePicker = NMaker.makeDateRangePicker(this.attributes.id + "-input-group", this.attributes.classes);
 
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
-        search.onclick = () => this.filter(this.modifierOptions.dateRange);
+        search.onclick = () => this.filter(NMaker.modifierOptions.dateRange);
         dateRangePicker.appendChild(search);
 
         //append input group to input container
@@ -724,7 +733,7 @@ class FilterMaker {
 
         //and a search button
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
-        search.onclick = () => this.filter(this.modifierOptions.match);
+        search.onclick = () => this.filter(NMaker.modifierOptions.match);
         inputGroup.appendChild(search);
 
         //append input group to input container
@@ -742,34 +751,34 @@ class FilterMaker {
 
         for (let row of this.data) {
             switch (type) {
-                case this.modifierOptions.contains:
+                case NMaker.modifierOptions.contains:
                     if (row[prop].toString().toLowerCase().includes(input.value.toLowerCase())) filteredData.push(row);
                     break;
-                case this.modifierOptions.boolean:
+                case NMaker.modifierOptions.boolean:
                     if (row[prop] == input.checked) filteredData.push(row);
                     break;
-                case this.modifierOptions.date:
+                case NMaker.modifierOptions.date:
                     if (Date.parse(row[prop]) == Date.parse(input.value)) filteredData.push(row);
                     break;
-                case this.modifierOptions.match:
-                case this.modifierOptions.equals:
-                case this.modifierOptions.select:
+                case NMaker.modifierOptions.match:
+                case NMaker.modifierOptions.equals:
+                case NMaker.modifierOptions.select:
                     if (row[prop].toString().toLowerCase() == input.value.toLowerCase()) filteredData.push(row);
                     break;
-                case this.modifierOptions.not:
-                case this.modifierOptions.excludes:
+                case NMaker.modifierOptions.not:
+                case NMaker.modifierOptions.excludes:
                     if (row[prop].toString().toLowerCase() != input.value.toString().toLowerCase()) filteredData.push(row);
                     break;
-                case this.modifierOptions.greaterThan:
+                case NMaker.modifierOptions.greaterThan:
                     if (Number(row[prop]) > Number(input.value)) filteredData.push(row);
                     break;
-                case this.modifierOptions.lessThan:
+                case NMaker.modifierOptions.lessThan:
                     if (Number(row[prop]) < Number(input.value)) filteredData.push(row);
                     break;
-                case this.modifierOptions.startsWith:
+                case NMaker.modifierOptions.startsWith:
                     if (row[prop].toString().toLowerCase().startsWith(input.value.toString().toLowerCase())) filteredData.push(row);
                     break;
-                case this.modifierOptions.dateRange:
+                case NMaker.modifierOptions.dateRange:
                     if (Date.parse(row[prop]) >= Date.parse(inputGroup.dataset.fromDate) && Date.parse(row[prop]) <= Date.parse(inputGroup.dataset.toDate)) filteredData.push(row);
                     break;
             }
