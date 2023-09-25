@@ -53,6 +53,8 @@ All componenets make use of the following attributes:
  - DropDownMaker - makes a dropdown list from given options (currently a hardcoded part of `filterMaker`)
  - PrintMaker - makes a print button that takes in the id of the div to print
  - DynamicTextInputMaker - name tbc, but a text input whose size updates according to the amount of text input so you never lose track of what you're writing.
+ - Loop Around option for paginator
+ - dynamic hide/show headings (a select box of checkboxes)
 
 ## TableMaker
 The main component of `NMaker`.
@@ -102,6 +104,20 @@ conditionalClasses : {
 For when you want to paginate data locally (so the data must already be loaded into the page).
 
 To Explain, but the code and demo are up.
+
+```js
+// Defaults
+this.attributeDefaults = {
+    id: "paginatorMaker-" + Date.now(),
+    parentSelector: "body",
+    pageLength: 50,
+    classes: {
+        container: ["navbar", "navbar-expand-sm"],
+        button: ["btn", "btn-sm", "btn-outline-primary"],
+        p: ["navbar-brand", "mx-2"]
+    }
+};
+```
 
 ### API
 

@@ -151,6 +151,7 @@ class TableMaker {
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
+            displayNames: false,
             conditionalClasses: false,
             parentSelector: "body",
             sorting: false,
@@ -230,7 +231,9 @@ class TableMaker {
             if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
 
             let th = document.createElement("th");
+
             th.value = key;
+
             NMaker.addStylesToElement(th, this.attributes.classes.th);
 
             let headingContainer = document.createElement("div");
@@ -238,7 +241,8 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-            span.innerText = NMaker.toCapitalizedWords(key);
+            if(this.attributes.displayNames[key]) span.innerText = this.attributes.displayNames[key];
+            else span.innerText = NMaker.toCapitalizedWords(key);
 
             headingContainer.appendChild(span);
             th.appendChild(headingContainer);
@@ -394,7 +398,7 @@ class PaginatorMaker {
         NMaker.addStylesToElement(container, this.attributes.classes.container);
 
         //previous button
-        let prevBtn = NMaker.makeBtn("prevBtn", "<-", () => {
+        let prevBtn = NMaker.makeBtn("prevBtn", "←", () => {
             this.page--;
             if (this.page < 1) this.page = 1;
             NMaker.pagedData = this.getPagedData();
@@ -405,7 +409,7 @@ class PaginatorMaker {
 
         //create current page display
         let pageDisplay = document.createElement("p");
-        pageDisplay.id = this.id + "-display";
+        pageDisplay.id = this.attributes.id + "-display";
         let pageDisplayText = document.createTextNode(this.getDisplay());
         NMaker.addStylesToElement(pageDisplay, this.attributes.classes.p);
         pageDisplay.style.margin = "0";
@@ -413,7 +417,7 @@ class PaginatorMaker {
         container.appendChild(pageDisplay);
 
         //next button
-        let nextBtn = NMaker.makeBtn("nextBtn", "->", () => {
+        let nextBtn = NMaker.makeBtn("nextBtn", "→", () => {
             this.page++;
             if (this.page > this.pages) this.page = this.pages;
             NMaker.pagedData = this.getPagedData();
@@ -427,7 +431,7 @@ class PaginatorMaker {
     }
 
     updateDisplay() {
-        document.getElementById(this.id + "-display").innerText = this.getDisplay();
+        document.getElementById(this.attributes.id + "-display").innerText = this.getDisplay();
     }
 
     getDisplay() {
@@ -727,6 +731,7 @@ class FilterMaker {
 
         let option = document.getElementById(this.attributes.id + "-selector").value;
         let options = Array.from(new Set(NMaker.data.map(d => d[option])));
+        options.sort();
         this.attachOptions(input, options);
 
         inputGroup.appendChild(input);
