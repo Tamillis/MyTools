@@ -11,7 +11,8 @@
       "phone": "+1 (813) 573-3273",
       "address": "702 Howard Avenue, Ryderwood, Michigan, 9891",
       "about": "Sit proident non sunt occaecat dolor dolor dolor consequat reprehenderit aliquip tempor Lorem ea reprehenderit. Amet laborum ullamco sit mollit aliqua anim labore aute aliquip minim aliquip consequat. Elit laboris consectetur id duis. Est ullamco id laborum nisi anim ex amet. Incididunt occaecat adipisicing veniam voluptate commodo commodo laborum sit consectetur proident eiusmod qui. Non pariatur aute sit laborum do sit labore officia consequat cillum eiusmod sint commodo duis. Nostrud laboris ut proident anim exercitation veniam.\r\n",
-      "registered": "2016-06-04T02:13:08 -01:00"
+      "registered": "2016-06-04T02:13:08 -01:00",
+      "renting": false
     },
     {
       "balance": "$1,875.24",
@@ -25,7 +26,8 @@
       "phone": "+1 (886) 402-3640",
       "address": "381 Ainslie Street, Oasis, North Dakota, 8206",
       "about": "Laborum adipisicing fugiat ex esse laborum consectetur consequat nostrud ut minim. Occaecat qui laboris non exercitation ex in. Qui in commodo quis ipsum amet in ad quis aute dolore in aute. Incididunt excepteur sit ea ullamco laboris ut aute sunt.\r\n",
-      "registered": "2015-04-04T03:27:35 -01:00"
+      "registered": "2015-04-04T03:27:35 -01:00",
+      "renting": false
     },
     {
       "balance": "$2,741.83",
@@ -39,7 +41,8 @@
       "phone": "+1 (885) 569-2804",
       "address": "732 Monroe Place, Elrama, Georgia, 8760",
       "about": "Aute aliqua ipsum labore duis magna reprehenderit nulla occaecat adipisicing magna irure irure. Et adipisicing aute enim labore qui est amet ullamco. Magna elit sit et nulla irure ullamco deserunt culpa anim elit do. Nulla velit irure esse non id id commodo nisi et esse adipisicing aliquip. Sint ad est ipsum incididunt excepteur officia nisi ut. Ullamco voluptate in non veniam enim veniam ea.\r\n",
-      "registered": "2017-01-21T09:01:45 -00:00"
+      "registered": "2017-01-21T09:01:45 -00:00",
+      "renting": true
     },
     {
       "balance": "$1,970.22",
@@ -53,7 +56,8 @@
       "phone": "+1 (941) 411-3867",
       "address": "521 Herzl Street, Wells, Virginia, 9702",
       "about": "Ad irure labore aliqua sunt. Ut reprehenderit aute Lorem dolor laborum anim officia. Quis irure mollit irure aute velit excepteur tempor. Ullamco non ullamco aliquip sit nulla nostrud occaecat.\r\n",
-      "registered": "2016-04-28T06:34:38 -01:00"
+      "registered": "2016-04-28T06:34:38 -01:00",
+      "renting": false
     },
     {
       "balance": "$1,039.88",
@@ -67,7 +71,8 @@
       "phone": "+1 (975) 491-3006",
       "address": "291 Jackson Court, Westwood, Colorado, 8876",
       "about": "Velit nulla nostrud duis ullamco cupidatat fugiat laboris exercitation aliqua. Anim irure cupidatat consectetur ad pariatur elit. Ex nisi veniam sit exercitation irure elit aliqua cupidatat Lorem ullamco excepteur sint amet.\r\n",
-      "registered": "2017-07-06T12:46:09 -01:00"
+      "registered": "2017-07-06T12:46:09 -01:00",
+      "renting": false
     },
     {
       "balance": "$3,149.16",
@@ -81,7 +86,8 @@
       "phone": "+1 (850) 498-3578",
       "address": "992 Nostrand Avenue, Cedarville, Missouri, 3436",
       "about": "Proident fugiat aliquip et ipsum ut cillum reprehenderit ad sit. Eu velit non veniam nulla proident tempor eiusmod mollit commodo irure proident amet sint. Dolor labore non cillum quis cupidatat non non laboris. Exercitation sint incididunt enim esse. Nulla excepteur et pariatur esse.\r\n",
-      "registered": "2020-04-11T01:09:23 -01:00"
+      "registered": "2020-04-11T01:09:23 -01:00",
+      "renting": true
     },
     {
       "balance": "$3,221.23",
@@ -95,7 +101,8 @@
       "phone": "+1 (971) 580-3820",
       "address": "435 Clinton Street, Fontanelle, Kentucky, 7904",
       "about": "Id mollit sint occaecat labore commodo aliqua non et est sunt et et ullamco. Quis anim aliquip in occaecat occaecat reprehenderit proident reprehenderit voluptate id minim et aliqua pariatur. Tempor sit eu ipsum laborum anim nulla. Lorem eu esse commodo qui deserunt exercitation incididunt tempor nostrud ad sit reprehenderit. Nulla Lorem adipisicing nulla do laboris. Eu laborum nisi ea id eu eu. Sit elit id excepteur cillum consequat consequat Lorem.\r\n",
-      "registered": "2017-06-16T06:23:47 -01:00"
+      "registered": "2017-06-16T06:23:47 -01:00",
+      "renting": false
     },
     {
       "balance": "$3,255.09",
@@ -109,7 +116,8 @@
       "phone": "+1 (946) 448-3074",
       "address": "642 Lincoln Terrace, Whipholt, South Dakota, 4274",
       "about": "Culpa cillum voluptate adipisicing minim exercitation minim mollit quis dolor sunt aute dolor. Voluptate ad eiusmod aliquip ea quis aliqua. Irure pariatur cupidatat elit dolore non labore fugiat commodo velit eu. Ullamco nulla consectetur sunt dolore magna Lorem officia adipisicing nostrud ullamco. Dolore laborum deserunt elit tempor adipisicing ipsum sint ullamco excepteur tempor dolore esse aute.\r\n",
-      "registered": "2014-04-13T12:54:47 -01:00"
+      "registered": "2014-04-13T12:54:47 -01:00",
+      "renting": false
     },
     {
       "balance": "$2,973.99",
@@ -123,7 +131,8 @@
       "phone": "+1 (940) 464-2404",
       "address": "457 Huntington Street, Dawn, Maine, 5706",
       "about": "Est non id officia occaecat labore. Excepteur qui officia tempor ex et ut nostrud sunt. Amet Lorem incididunt ipsum enim adipisicing aliquip reprehenderit sit veniam.\r\n",
-      "registered": "2014-11-21T04:32:51 -00:00"
+      "registered": "2014-11-21T04:32:51 -00:00",
+      "renting": false
     },
     {
       "balance": "$3,842.87",
@@ -137,6 +146,7 @@
       "phone": "+1 (906) 473-3936",
       "address": "211 Beekman Place, Greenbackville, Oregon, 7319",
       "about": "Consequat deserunt mollit do velit sint occaecat minim non in duis. Ullamco aliquip est dolore amet in ipsum dolor eu. Qui excepteur reprehenderit duis ad amet dolore anim et eiusmod anim anim. Nisi proident deserunt eiusmod velit qui exercitation aute sit. Do cillum qui sint tempor fugiat aliqua do minim deserunt reprehenderit elit laboris cillum deserunt. Amet qui deserunt in ullamco voluptate.\r\n",
-      "registered": "2022-09-06T01:37:05 -01:00"
+      "registered": "2022-09-06T01:37:05 -01:00",
+      "renting": true
     }
   ]

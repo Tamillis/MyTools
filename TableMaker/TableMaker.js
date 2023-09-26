@@ -201,10 +201,11 @@ class TableMaker {
             this.attributes.sortingOrientation[column] = btnKind == "asc" ? "desc" : "asc";
 
             //sort the exposed data
-            NMaker.pagedData.sort((prevRow, currRow) => {
+            NMaker.filteredData.sort((prevRow, currRow) => {
                 let comparison = compare(prevRow[column], currRow[column]);
                 return btnKind == "asc" ? -1 * comparison : comparison;
             });
+            document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
         }, this.attributes.classes.button);
     }
@@ -241,7 +242,7 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-            if(this.attributes.displayNames[key]) span.innerText = this.attributes.displayNames[key];
+            if(this.attributes.displayNames.hasOwnProperty(key)) span.innerText = this.attributes.displayNames[key];
             else span.innerText = NMaker.toCapitalizedWords(key);
 
             headingContainer.appendChild(span);
@@ -273,7 +274,7 @@ class TableMaker {
 
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
-            if(this.attributes.conditionalClasses[key]) {
+            if(this.attributes.conditionalClasses.hasOwnProperty(key)) {
                 let cc = {...this.attributes.conditionalClasses[key]};
                 
                 cc.condition = cc.condition.replace(key, JSON.stringify(data[key]));
