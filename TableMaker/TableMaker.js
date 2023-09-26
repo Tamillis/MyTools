@@ -8,6 +8,7 @@ class NMaker {
         greaterThan: ">",
         lessThan: "<",
         not: "Not",
+        numberRange: "Between",
         match: "Matches",
         contains: "Contains",
         startsWith: "Starts with",
@@ -127,6 +128,37 @@ class NMaker {
         dateRangePicker.appendChild(toDateInput);
 
         return dateRangePicker;
+    }
+
+    static makeNumberRangePicker(id, classes, lower = 0, upper = 1) {
+        //replace or make the container
+        let numberRangePicker = NMaker.replaceElement(id, "div");
+        NMaker.addStylesToElement(numberRangePicker, classes.inputGroup);
+
+        //make lower Number input
+        let lowerNumberInput = document.createElement("input");
+        lowerNumberInput.type = "number";
+        lowerNumberInput.placeholder = lower;
+        lowerNumberInput.id = id + "-lower";
+        NMaker.addStylesToElement(lowerNumberInput, classes.input);
+
+        //make upper number input
+        let upperNumberInput = document.createElement("input");
+        upperNumberInput.type = "number";
+        upperNumberInput.placeholder = upper;
+        upperNumberInput.id = id + "-upper";
+        NMaker.addStylesToElement(upperNumberInput, classes.input);
+
+        let between = document.createElement("label");
+        between.innerText = "→";
+        between.for = upperNumberInput.id;
+        NMaker.addStylesToElement(between, classes.label);
+
+        numberRangePicker.appendChild(lowerNumberInput);
+        numberRangePicker.appendChild(between);
+        numberRangePicker.appendChild(upperNumberInput);
+
+        return numberRangePicker;
     }
 
     static init(data) {
@@ -461,7 +493,7 @@ class FilterMaker {
             ignore: false,
             useModifier: false,
             modifier: {
-                number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not],
+                number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not, NMaker.modifierOptions.numberRange],
                 string: [NMaker.modifierOptions.contains, NMaker.modifierOptions.select, NMaker.modifierOptions.startsWith, NMaker.modifierOptions.match, NMaker.modifierOptions.excludes],
                 date: [NMaker.modifierOptions.date, NMaker.modifierOptions.dateRange],
                 boolean: [NMaker.modifierOptions.boolean]
@@ -569,6 +601,7 @@ class FilterMaker {
         modifier.onchange = () => {
             if (modifier.value == NMaker.modifierOptions.dateRange) this.makeDateRangeInput();
             else if (modifier.value == NMaker.modifierOptions.select) this.makeSelectInput();
+            else if (modifier.value == NMaker.modifierOptions.numberRange) this.makeNumberRangeInput();
             else {
                 let priorValue = document.getElementById(this.attributes.id + "-input") ? document.getElementById(this.attributes.id + "-input").value : null;
                 this.makeBasicInput();
@@ -722,6 +755,16 @@ class FilterMaker {
         document.getElementById(this.attributes.id + "-input-container").appendChild(dateRangePicker);
     }
 
+    makeNumberRangeInput() {
+        let numberRangePicker = NMaker.makeNumberRangePicker(this.attributes.id + "-input-group", this.attributes.classes);
+
+        let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => this.filter(NMaker.modifierOptions.numberRange), this.attributes.classes.button);
+        numberRangePicker.appendChild(search);
+
+        //append input group to input container
+        document.getElementById(this.attributes.id + "-input-container").appendChild(numberRangePicker);
+    }
+
     makeSelectInput() {
         //remove old input / inputs by clearing input-group
         let inputGroup = NMaker.replaceElement(this.attributes.id + "-input-group", "div", this.attributes.classes.inputGroup);
@@ -788,6 +831,10 @@ class FilterMaker {
                 case NMaker.modifierOptions.dateRange:
                     if (Date.parse(row[prop]) >= Date.parse(inputGroup.dataset.fromDate) && Date.parse(row[prop]) <= Date.parse(inputGroup.dataset.toDate)) filteredData.push(row);
                     break;
+                case NMaker.modifierOptions.numberRange:
+                    let lowerInput = document.getElementById(inputGroup.id + "-lower");
+                    let upperInput = document.getElementById(inputGroup.id + "-upper");
+                    if(row[prop] < upperInput.value && row[prop] > lowerInput.value) filteredData.push(row);
             }
         }
 
