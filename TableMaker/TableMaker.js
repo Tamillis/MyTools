@@ -299,11 +299,6 @@ class TableMaker {
         let tr = tbody.insertRow();
 
         for (let key in data) {
-            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
-
-            let td = tr.insertCell();
-            NMaker.addStylesToElement(td, classes);
-
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             if(this.attributes.conditionalClasses.hasOwnProperty(key)) {
@@ -320,6 +315,11 @@ class TableMaker {
                     else if(cc.target == "cell") NMaker.addStylesToElement(td, cc.classesNot);
                 }
             }
+
+            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
+
+            let td = tr.insertCell();
+            NMaker.addStylesToElement(td, classes);
 
             //FORMAT DATA
             let content = data[key];
