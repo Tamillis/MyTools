@@ -610,7 +610,8 @@ class FilterMaker {
     makeModifierOptions(value) {
         //populate Modifier options
         let modifier = document.getElementById(this.attributes.id + "-modifier");
-
+        modifier.hidden = false;
+        
         //first clear old options
         while (modifier.firstChild) {
             modifier.removeChild(modifier.lastChild);
@@ -626,7 +627,7 @@ class FilterMaker {
                 this.attachOptions(modifier, this.attributes.modifier.string);
                 break;
             case "boolean":
-                this.attachOptions(modifier, this.attributes.modifier.boolean);
+                modifier.hidden = true;
                 break;
             case "object":
                 if (value instanceof Date) {
