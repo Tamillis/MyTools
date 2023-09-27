@@ -16,7 +16,7 @@
     },
     {
       "balance": "$1,875.24",
-      "picture": "http://placehold.it/32x32",
+      "picture": "",
       "age": 25,
       "eyeColor": "blue",
       "name": "Mullen Conner",
@@ -91,7 +91,7 @@
     },
     {
       "balance": "$3,221.23",
-      "picture": "http://placehold.it/32x32",
+      "picture": "",
       "age": 34,
       "eyeColor": "brown",
       "name": "Boyd Pruitt",
@@ -106,7 +106,7 @@
     },
     {
       "balance": "$3,255.09",
-      "picture": "http://placehold.it/32x32",
+      "picture": "",
       "age": 29,
       "eyeColor": "green",
       "name": "Trevino Spence",
@@ -166,7 +166,7 @@
     },
     {
       "balance": "$857.00",
-      "picture": "http://placehold.it/32x32",
+      "picture": "",
       "age": 18,
       "eyeColor": "gray",
       "name": "Hannah Chowdry",

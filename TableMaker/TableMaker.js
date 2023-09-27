@@ -341,29 +341,6 @@ class TableMaker {
         for (let key in data) {
             let td = document.createElement("td");
 
-            // Apply conditional class to tr of td if condition is met against the cell's data
-            // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
-            if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
-                let cc = { ...this.attributes.conditionalClasses[key] };
-
-                //Replace any prop in the condition with the value of that prop
-                for (let prop in data) {
-                    cc.condition = cc.condition.replace(prop, JSON.stringify(data[prop]));
-                }
-
-                if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
-                    if (cc.target == "row") NMaker.addStylesToElement(tr, cc.classesIf);
-                    else if (cc.target == "cell") NMaker.addStylesToElement(td, cc.classesIf);
-                }
-                else if (cc.classesNot) {
-                    if (cc.target == "row") NMaker.addStylesToElement(tr, cc.classesNot);
-                    else if (cc.target == "cell") NMaker.addStylesToElement(td, cc.classesNot);
-                }
-            }
-
-            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
-
-            tr.appendChild(td);
             NMaker.addStylesToElement(td, classes);
 
             //FORMAT DATA
@@ -391,6 +368,42 @@ class TableMaker {
             }
 
             td.appendChild(content);
+
+            // Apply conditional class to tr of td if condition is met against the cell's data
+            // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
+            if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
+                let cc = { ...this.attributes.conditionalClasses[key] };
+
+                //Replace any prop in the condition with the value of that prop
+                for (let prop in data) {
+                    cc.condition = cc.condition.replace(prop + ' ', JSON.stringify(data[prop]));
+                }
+
+                if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
+                    this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
+                }
+                else if (cc.classesNot) {
+                    this.addStylesToTarget(cc.target, tr, td, cc.classesNot);
+                }
+            }
+
+            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
+
+            tr.appendChild(td);
+        }
+    }
+
+    addStylesToTarget(target, tr, td, classes) {
+        switch (target) {
+            case "row":
+                NMaker.addStylesToElement(tr, classes);
+                break;
+            case "cell":
+                NMaker.addStylesToElement(td, classes);
+                break;
+            case "link":
+                NMaker.addStylesToElement(td.firstElementChild, classes);
+                break;
         }
     }
 
@@ -795,7 +808,7 @@ class FilterMaker {
         if (this.attributes.useColumnFilter) {
             //currently selected prop
             let prop = document.getElementById(this.attributes.id + "-selector").value;
-            
+
             let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
 
             let toggleColBtn = NMaker.makeBtn(this.attributes.id + "-col-filter", btnName, () => {
