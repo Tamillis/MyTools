@@ -134,12 +134,13 @@
             paginator = new PaginatorMaker({
                 id: "newPaginator",
                 parentSelector: "#paginator-container",
-                pageLength: 4,
+                pageLength: 5,
                 buttons: NMaker.paginatorOptions.cycle
             });
 
             filter = new FilterMaker({
                 parentSelector: "#table-container",
+                order: NMaker.sortOptions.alphabetical,
                 ignore: ["picture", "about"],
                 useModifier: true,
                 classes : {
@@ -151,7 +152,7 @@
                 id: "newTable",
                 parentSelector: "#table-container",
                 sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
-                hide: ["about"],
+                hide: ["about", "renting"],
                 currency: ["balance"],
                 link: [{
                     name: "picture",
@@ -168,11 +169,6 @@
                         condition: "balance < 3000 && renting == true",
                         target: "cell",
                         classesIf: ["text-decoration-underline"]
-                    },
-                    renting: {
-                        condition: "renting == false",
-                        target: "cell",
-                        classesIf: ["bold"]
                     }
                 },
                 displayNames : {

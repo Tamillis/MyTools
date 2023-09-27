@@ -19,8 +19,18 @@ class NMaker {
         select: "Select"
     });
     static paginatorOptions = Object.freeze({
-        bookend : "Bookend",
-        cycle : "Cycle"
+        bookend: "Bookend",
+        cycle: "Cycle"
+    });
+
+    static sortOptions = Object.freeze({
+        original: "Original",
+        alphabetical: "Alphabetical",
+        alphabeticalReverse: "Alphabetical-reverse",
+        numeric: "Numeric",
+        numericReverse: "Numeric-reverse",
+        date: "Date",
+        dateReverse: "Date-reverse"
     });
 
     static table;
@@ -64,6 +74,19 @@ class NMaker {
         }
 
         return true;
+    }
+
+    static compare = (sortOption, a, b) => {
+        if (a == null || b == null || sortOption == NMaker.sortOptions.original) return 1;
+        if (sortOption == NMaker.sortOptions.numeric || sortOption == NMaker.sortOptions.date) return a - b;
+        if (sortOption == NMaker.sortOptions.numericReverse || sortOption == NMaker.sortOptions.dateReverse) return b - a;
+        if (sortOption == NMaker.sortOptions.alphabetical) return a.localeCompare(b);
+        if (sortOption == NMaker.sortOptions.alphabeticalReverse) return b.localeCompare(a);
+        return 1;
+    };
+
+    static sort(data, sortOrder) {
+        return data.slice().sort((a, b) => NMaker.compare(sortOrder, a, b));
     }
 
     static addStylesToElement(el, styles) {
@@ -212,7 +235,7 @@ class TableMaker {
         }
 
         NMaker.table = this;
-        
+
         document.addEventListener("updatedPageData", (e) => {
             this.data = NMaker.pagedData;
             NMaker.table.makeTable();
@@ -222,24 +245,30 @@ class TableMaker {
     }
 
     addSortBtn(column) {
-        let compare = (a, b) => {
-            if (a == null || b == null) return 1;
-            if (typeof a == "number" && typeof b == "number") return a - b;
-            if (typeof a == "string" && typeof b == "string") return a.localeCompare(b);
-            if (a instanceof Date && b instanceof Date) return a - b;
-            return 1;
-        };
-
-        let name = this.attributes.sortingOrientation[column] == "asc" ? "↑" : "↓";
+        let btnKind = this.attributes.sortingOrientation[column];  //the state of the button, "asc" or "desc"
+        let name = btnKind == "asc" ? "↑" : "↓";
         return NMaker.makeBtn(this.attributes.id + "-" + column, name, () => {
-            let btnKind = this.attributes.sortingOrientation[column];  //the state of the button, "asc" or "desc"
             //invert the state
             this.attributes.sortingOrientation[column] = btnKind == "asc" ? "desc" : "asc";
 
-            //sort the exposed data
-            NMaker.filteredData.sort((prevRow, currRow) => {
-                let comparison = compare(prevRow[column], currRow[column]);
-                return btnKind == "asc" ? -1 * comparison : comparison;
+            //sort the exposed data based on its type
+            NMaker.filteredData = NMaker.filteredData.slice().sort((prevRow, currRow) => {
+                let sortOption = null;
+                switch (typeof currRow[column]) {
+                    case "number":
+                        sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                        break;
+                    case "string":
+                        sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
+                        break;
+                    case "object":
+                        if (currRow instanceof Date) sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                        break;
+                    default:
+                        sortOption = NMaker.sortOptions.alphabetical;
+                }
+
+                return NMaker.compare(sortOption, prevRow[column], currRow[column]);
             });
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
@@ -278,7 +307,7 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-            if(this.attributes.displayNames.hasOwnProperty(key)) span.innerText = this.attributes.displayNames[key];
+            if (this.attributes.displayNames.hasOwnProperty(key)) span.innerText = this.attributes.displayNames[key];
             else span.innerText = NMaker.toCapitalizedWords(key);
 
             headingContainer.appendChild(span);
@@ -307,21 +336,21 @@ class TableMaker {
 
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
-            if(this.attributes.conditionalClasses.hasOwnProperty(key)) {
-                let cc = {...this.attributes.conditionalClasses[key]};
-                
+            if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
+                let cc = { ...this.attributes.conditionalClasses[key] };
+
                 //Replace any prop in the condition with the value of that prop
-                for(let prop in data) {
+                for (let prop in data) {
                     cc.condition = cc.condition.replace(prop, JSON.stringify(data[prop]));
                 }
 
-                if(eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
-                    if(cc.target == "row") NMaker.addStylesToElement(tr, cc.classesIf);
-                    else if(cc.target == "cell") NMaker.addStylesToElement(td, cc.classesIf);
+                if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
+                    if (cc.target == "row") NMaker.addStylesToElement(tr, cc.classesIf);
+                    else if (cc.target == "cell") NMaker.addStylesToElement(td, cc.classesIf);
                 }
                 else if (cc.classesNot) {
-                    if(cc.target == "row") NMaker.addStylesToElement(tr, cc.classesNot);
-                    else if(cc.target == "cell") NMaker.addStylesToElement(td, cc.classesNot);
+                    if (cc.target == "row") NMaker.addStylesToElement(tr, cc.classesNot);
+                    else if (cc.target == "cell") NMaker.addStylesToElement(td, cc.classesNot);
                 }
             }
 
@@ -391,7 +420,7 @@ class PaginatorMaker {
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 p: ["navbar-brand", "mx-2"]
             },
-            buttons : NMaker.paginatorOptions.bookend
+            buttons: NMaker.paginatorOptions.bookend
         };
 
         //Attributes
@@ -444,7 +473,7 @@ class PaginatorMaker {
         let prevBtn = NMaker.makeBtn("prevBtn", "←", () => {
             this.page--;
             if (this.page < 1) {
-                if(this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = 1;
+                if (this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = 1;
                 else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = this.pages;
                 else throw new Error("Invalid PaginatorMaker buttons option");
             }
@@ -467,7 +496,7 @@ class PaginatorMaker {
         let nextBtn = NMaker.makeBtn("nextBtn", "→", () => {
             this.page++;
             if (this.page > this.pages) {
-                if(this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = this.pages;
+                if (this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = this.pages;
                 else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = 1;
                 else throw new Error("Invalid PaginatorMaker buttons option");
             }
@@ -509,6 +538,7 @@ class FilterMaker {
                 dateRange: ["input-group"]
             },
             ignore: false,
+            order: NMaker.sortOptions.original,
             useModifier: false,
             modifier: {
                 number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not, NMaker.modifierOptions.numberRange],
@@ -636,7 +666,7 @@ class FilterMaker {
     makeSelector() {
         let selector = document.createElement("select");
         selector.id = this.attributes.id + "-selector";
-        for (let prop in this.data[0]) {
+        for (let prop of NMaker.sort(Object.keys(this.data[0]), this.attributes.order)) {
             if (this.attributes.ignore && this.attributes.ignore.includes(prop)) continue;
             let opt = document.createElement("option");
             opt.value = prop;
@@ -663,7 +693,7 @@ class FilterMaker {
         let modifier = document.getElementById(this.attributes.id + "-modifier");
         modifier.hidden = false;
         modifier.style.display = "block";
-        
+
         //first clear old options
         while (modifier.firstChild) {
             modifier.removeChild(modifier.lastChild);
@@ -854,7 +884,7 @@ class FilterMaker {
                 case NMaker.modifierOptions.numberRange:
                     let lowerInput = document.getElementById(inputGroup.id + "-lower");
                     let upperInput = document.getElementById(inputGroup.id + "-upper");
-                    if(row[prop] < upperInput.value && row[prop] > lowerInput.value) filteredData.push(row);
+                    if (row[prop] < upperInput.value && row[prop] > lowerInput.value) filteredData.push(row);
             }
         }
 

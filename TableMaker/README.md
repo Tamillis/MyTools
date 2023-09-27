@@ -143,6 +143,7 @@ In what way the presented data will be filtered, depending on the modifier. If n
 | **Attribute** | **Effect** |
 | --- | --- |
 | `ignore` | Headings to not include in the filter. |
+| `order` | How to order the headings selection, defaults to the data's original order. Other NMakerSortOptions accepted. |
 | `useModifier` | `true` or `false` |
 | `modifier` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `modifierOptions`. See below |
 

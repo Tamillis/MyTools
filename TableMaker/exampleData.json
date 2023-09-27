@@ -148,5 +148,35 @@
       "about": "Consequat deserunt mollit do velit sint occaecat minim non in duis. Ullamco aliquip est dolore amet in ipsum dolor eu. Qui excepteur reprehenderit duis ad amet dolore anim et eiusmod anim anim. Nisi proident deserunt eiusmod velit qui exercitation aute sit. Do cillum qui sint tempor fugiat aliqua do minim deserunt reprehenderit elit laboris cillum deserunt. Amet qui deserunt in ullamco voluptate.\r\n",
       "registered": "2022-09-06T01:37:05 -01:00",
       "renting": true
+    },
+    {
+      "balance": "$5,111.99",
+      "picture": "http://placehold.it/32x32",
+      "age": 67,
+      "eyeColor": "green",
+      "name": "Harold Hardradr",
+      "gender": "male",
+      "company": "NORDOIL",
+      "email": "raiderr@nordoil.com",
+      "phone": "+32 (0) 438-4627",
+      "address": "Bertha, Nordoil Offshore Rig 3, North Sea",
+      "about": "Est non id officia occaecat labore. Excepteur qui officia tempor ex et ut nostrud sunt. Amet Lorem incididunt ipsum enim adipisicing aliquip reprehenderit sit veniam.\r\n",
+      "registered": "2010-09-01T18:12:08 -00:00",
+      "renting": true
+    },
+    {
+      "balance": "$857.00",
+      "picture": "http://placehold.it/32x32",
+      "age": 18,
+      "eyeColor": "gray",
+      "name": "Hannah Chowdry",
+      "gender": "female",
+      "company": "APEX",
+      "email": "hchowdry@apex.com",
+      "phone": "+44 (7845) 628 325",
+      "address": "103 Bakers Lane, Greenwich, London, GL1 1XZ",
+      "about": "Consequat deserunt mollit do velit sint occaecat minim non in duis. Ullamco aliquip est dolore amet in ipsum dolor eu. Qui excepteur reprehenderit duis ad amet dolore anim et eiusmod anim anim. Nisi proident deserunt eiusmod velit qui exercitation aute sit. Do cillum qui sint tempor fugiat aliqua do minim deserunt reprehenderit elit laboris cillum deserunt. Amet qui deserunt in ullamco voluptate.\r\n",
+      "registered": "2023-01-08T23:30:25 01:00",
+      "renting": true
     }
   ]
