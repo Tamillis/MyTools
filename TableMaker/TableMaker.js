@@ -17,6 +17,8 @@ class NMaker {
         excludes: "Excludes",
         date: "Date",
         dateRange: "From -> To",
+        before: "Before",
+        after: "After",
         boolean: "Boolean",
         select: "Select"
     });
@@ -545,7 +547,7 @@ class FilterMaker {
             modifier: {
                 number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not, NMaker.modifierOptions.numberRange],
                 string: [NMaker.modifierOptions.contains, NMaker.modifierOptions.select, NMaker.modifierOptions.startsWith, NMaker.modifierOptions.match, NMaker.modifierOptions.excludes],
-                date: [NMaker.modifierOptions.date, NMaker.modifierOptions.dateRange],
+                date: [NMaker.modifierOptions.date, NMaker.modifierOptions.dateRange, NMaker.modifierOptions.before, NMaker.modifierOptions.after],
                 boolean: [NMaker.modifierOptions.boolean]
             },
             useColumnFilter: false
@@ -919,6 +921,20 @@ class FilterMaker {
                     break;
                 case NMaker.modifierOptions.dateRange:
                     if (Date.parse(row[prop]) >= Date.parse(inputGroup.dataset.fromDate) && Date.parse(row[prop]) <= Date.parse(inputGroup.dataset.toDate)) filteredData.push(row);
+                    break;
+                case NMaker.modifierOptions.before:
+                    if (!(row[prop] instanceof Date)) {
+                        console.Error("Cannot sort Date, data is not date");
+                        return;
+                    }
+                    if (Date.parse(row[prop]) < Date.parse(input.value)) filteredData.push(row);
+                    break;
+                case NMaker.modifierOptions.after:
+                    if (!(row[prop] instanceof Date)) {
+                        console.Error("Cannot sort Date, data is not date");
+                        return;
+                    }
+                    if (Date.parse(row[prop]) > Date.parse(input.value)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.numberRange:
                     let lowerInput = document.getElementById(inputGroup.id + "-lower");
