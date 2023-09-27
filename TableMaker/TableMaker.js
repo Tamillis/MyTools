@@ -3,6 +3,8 @@ class NMaker {
     static updatedPageData = new Event("updatedPageData");
     static data = [];
     static filteredData = [];
+    static headings = [];
+    static hiddenHeadings = [];
     static modifierOptions = Object.freeze({
         equals: "=",
         greaterThan: ">",
@@ -235,6 +237,7 @@ class TableMaker {
         }
 
         NMaker.table = this;
+        NMaker.hiddenHeadings = this.attributes.hide ? this.attributes.hide : [];
 
         document.addEventListener("updatedPageData", (e) => {
             this.data = NMaker.pagedData;
@@ -394,13 +397,12 @@ class TableMaker {
         this.generateTableBody();
     }
 
-    /// Main entry point, data must be valid and well-formed JSON
     makeTable() {
-        //either make new table element or overwrite specified table element
         this.table = NMaker.replaceElement(this.attributes.id, "table");
-        this.table.id = this.attributes.id;
 
-        for (let style of this.attributes.classes.table) this.table.classList.add(style);
+        this.attributes.hide = NMaker.hiddenHeadings;
+
+        NMaker.addStylesToElement(this.table, this.attributes.classes.table)
 
         document.querySelector(this.attributes.parentSelector).appendChild(this.table);
 
@@ -545,7 +547,8 @@ class FilterMaker {
                 string: [NMaker.modifierOptions.contains, NMaker.modifierOptions.select, NMaker.modifierOptions.startsWith, NMaker.modifierOptions.match, NMaker.modifierOptions.excludes],
                 date: [NMaker.modifierOptions.date, NMaker.modifierOptions.dateRange],
                 boolean: [NMaker.modifierOptions.boolean]
-            }
+            },
+            useColumnFilter: false
         };
 
         this.attributes = {
@@ -576,7 +579,7 @@ class FilterMaker {
         container.appendChild(selection);
 
         //make the filter input
-        let input = this.makeInput();
+        let input = this.makeInputGroup();
         container.appendChild(input);
 
         //attach container to DOM
@@ -586,17 +589,13 @@ class FilterMaker {
         this.makeFilterInput();
     }
 
-    makeInput() {
+    makeInputGroup() {
         //create input container
         let inputContainer = this.makeContainer(this.attributes.id + "-input-container", this.attributes.classes.inputContainer);
 
         //create input container, as the input needs to be re-inserted smoothly and also to contain the modifier
         let inputGroup = this.makeContainer(this.attributes.id + "-input-group", this.attributes.classes.inputGroup);
 
-        //make the search button part of the selection container
-        let searchBtn = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
-
-        inputGroup.appendChild(searchBtn);
         inputContainer.appendChild(inputGroup);
 
         return inputContainer;
@@ -618,7 +617,7 @@ class FilterMaker {
 
         //reset button
         let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
-            this.makeInput();
+            this.makeInputGroup();
             NMaker.filteredData = NMaker.data;
             NMaker.pagedData = NMaker.data;
             document.dispatchEvent(NMaker.updatedData);
@@ -628,7 +627,6 @@ class FilterMaker {
 
         //property dropdown 'selector'
         let selector = this.makeSelector();
-        selector.onchange = () => this.makeFilterInput();
         selectionInputGroup.appendChild(selector);
 
         //create the modifier if wanted
@@ -675,7 +673,20 @@ class FilterMaker {
         }
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
+        selector.onchange = () => {
+            if (this.attributes.useColumnFilter) this.updateColumnFilterBtn();
+            this.makeFilterInput();
+        };
+
         return selector;
+    }
+
+    updateColumnFilterBtn() {
+        let btn = document.getElementById(this.attributes.id + "-col-filter");
+        let prop = document.getElementById(this.attributes.id + "-selector").value;
+
+        if (NMaker.hiddenHeadings.includes(prop)) btn.innerText = "Show";
+        else btn.innerText = "Hide";
     }
 
     makeFilterInput() {
@@ -787,8 +798,36 @@ class FilterMaker {
 
         //attach input
         inputGroup.appendChild(input);
-        //attach btn
+
+        //attach search button
         inputGroup.appendChild(search);
+
+        //If 'useColumnFilter' is true, add the column show/hide button
+        if (this.attributes.useColumnFilter) {
+            //currently selected prop
+            let prop = document.getElementById(this.attributes.id + "-selector").value;
+            let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
+
+            let toggleColBtn = NMaker.makeBtn(this.attributes.id + "-col-filter", btnName, () => {
+                //currently selected prop
+                let prop = document.getElementById(this.attributes.id + "-selector").value;
+
+                //check if current selected prop is on Table's hidden list
+                if (NMaker.hiddenHeadings.includes(prop)) {
+                    NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter((h) => h !== prop);
+                    toggleColBtn.innerText = "Hide";
+                }
+                else {
+                    NMaker.hiddenHeadings.push(prop);
+                    toggleColBtn.innerText = "Show";
+                }
+
+                // update table
+                document.dispatchEvent(NMaker.updatedData);
+                document.dispatchEvent(NMaker.updatedPageData);
+            }, this.attributes.classes.button);
+            inputGroup.appendChild(toggleColBtn);
+        }
 
         //attach to input container
         document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
