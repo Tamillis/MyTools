@@ -299,12 +299,17 @@ class TableMaker {
         let tr = tbody.insertRow();
 
         for (let key in data) {
+
+            let td = document.createElement("td");
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             if(this.attributes.conditionalClasses.hasOwnProperty(key)) {
                 let cc = {...this.attributes.conditionalClasses[key]};
                 
-                cc.condition = cc.condition.replace(key, JSON.stringify(data[key]));
+                //Replace any prop in the condition with the value of that prop
+                for(let prop in data) {
+                    cc.condition = cc.condition.replace(prop, JSON.stringify(data[prop]));
+                }
 
                 if(eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
                     if(cc.target == "row") NMaker.addStylesToElement(tr, cc.classesIf);
@@ -318,7 +323,7 @@ class TableMaker {
 
             if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
 
-            let td = tr.insertCell();
+            tr.appendChild(td);
             NMaker.addStylesToElement(td, classes);
 
             //FORMAT DATA
