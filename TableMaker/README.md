@@ -101,7 +101,7 @@ conditionalClasses : {
 ```
 
 ## PaginatorMaker
-For when you want to paginate data locally (so the data must already be loaded into the page).
+For when you want to paginate data locally (so the data must already be loaded into the page). Handy if you would otherwise be displaying a table with several thousand rows.
 
 To Explain, but the code and demo are up.
 
@@ -115,7 +115,8 @@ this.attributeDefaults = {
         container: ["navbar", "navbar-expand-sm"],
         button: ["btn", "btn-sm", "btn-outline-primary"],
         p: ["navbar-brand", "mx-2"]
-    }
+    },
+    buttons : NMaker.paginatorOptions.bookend
 };
 ```
 
