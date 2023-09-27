@@ -134,7 +134,8 @@
             paginator = new PaginatorMaker({
                 id: "newPaginator",
                 parentSelector: "#paginator-container",
-                pageLength: 5
+                pageLength: 4,
+                buttons: NMaker.paginatorOptions.cycle
             });
 
             filter = new FilterMaker({

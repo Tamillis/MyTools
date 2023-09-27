@@ -18,6 +18,10 @@ class NMaker {
         boolean: "Boolean",
         select: "Select"
     });
+    static paginatorOptions = Object.freeze({
+        bookend : "Bookend",
+        cycle : "Cycle"
+    });
 
     static table;
     static filter;
@@ -299,8 +303,8 @@ class TableMaker {
         let tr = tbody.insertRow();
 
         for (let key in data) {
-
             let td = document.createElement("td");
+
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             if(this.attributes.conditionalClasses.hasOwnProperty(key)) {
@@ -386,7 +390,8 @@ class PaginatorMaker {
                 container: ["navbar", "navbar-expand-sm"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 p: ["navbar-brand", "mx-2"]
-            }
+            },
+            buttons : NMaker.paginatorOptions.bookend
         };
 
         //Attributes
@@ -438,7 +443,11 @@ class PaginatorMaker {
         //previous button
         let prevBtn = NMaker.makeBtn("prevBtn", "←", () => {
             this.page--;
-            if (this.page < 1) this.page = 1;
+            if (this.page < 1) {
+                if(this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = 1;
+                else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = this.pages;
+                else throw new Error("Invalid PaginatorMaker buttons option");
+            }
             NMaker.pagedData = this.getPagedData();
             document.dispatchEvent(NMaker.updatedPageData);
             this.updateDisplay();
@@ -457,7 +466,11 @@ class PaginatorMaker {
         //next button
         let nextBtn = NMaker.makeBtn("nextBtn", "→", () => {
             this.page++;
-            if (this.page > this.pages) this.page = this.pages;
+            if (this.page > this.pages) {
+                if(this.attributes.buttons == NMaker.paginatorOptions.bookend) this.page = this.pages;
+                else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = 1;
+                else throw new Error("Invalid PaginatorMaker buttons option");
+            }
             NMaker.pagedData = this.getPagedData();
             document.dispatchEvent(NMaker.updatedPageData);
             this.updateDisplay();
@@ -649,6 +662,7 @@ class FilterMaker {
         //populate Modifier options
         let modifier = document.getElementById(this.attributes.id + "-modifier");
         modifier.hidden = false;
+        modifier.style.display = "block";
         
         //first clear old options
         while (modifier.firstChild) {
@@ -666,6 +680,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 modifier.hidden = true;
+                modifier.style.display = "none";
                 break;
             case "object":
                 if (value instanceof Date) {
