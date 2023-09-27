@@ -247,6 +247,8 @@ class TableMaker {
         });
 
         document.dispatchEvent(NMaker.updatedPageData);
+
+        NMaker.filter.makeInputGroup();
     }
 
     addSortBtn(column) {
@@ -570,36 +572,36 @@ class FilterMaker {
 
         this.data = NMaker.data;
         this.makeFilter();
+        NMaker.filter = this;
     }
 
     makeFilter() {
         //make outer container
         let container = this.makeContainer(this.attributes.id, this.attributes.classes.container);
 
-        //make selection (reset btn, selector, & modifier if in use)
+        //make selection container (reset btn, selector, & modifier if in use)
         let selection = this.makeSelection();
         container.appendChild(selection);
 
-        //make the filter input
-        let input = this.makeInputGroup();
+        //make the input container
+        let input = this.makeInputContainer();
         container.appendChild(input);
 
         //attach container to DOM
         document.querySelector(this.attributes.parentSelector).appendChild(container);
 
         //create the initial input
-        this.makeFilterInput();
+        this.makeInputGroup();
+
+        //create the initial modifier options, if in use
+        if (this.attributes.useModifier) {
+            this.makeModifierOptions();
+        }
     }
 
-    makeInputGroup() {
+    makeInputContainer() {
         //create input container
         let inputContainer = this.makeContainer(this.attributes.id + "-input-container", this.attributes.classes.inputContainer);
-
-        //create input container, as the input needs to be re-inserted smoothly and also to contain the modifier
-        let inputGroup = this.makeContainer(this.attributes.id + "-input-group", this.attributes.classes.inputGroup);
-
-        inputContainer.appendChild(inputGroup);
-
         return inputContainer;
     }
 
@@ -619,7 +621,7 @@ class FilterMaker {
 
         //reset button
         let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
-            this.makeInputGroup();
+            this.makeInputContainer();
             NMaker.filteredData = NMaker.data;
             NMaker.pagedData = NMaker.data;
             document.dispatchEvent(NMaker.updatedData);
@@ -652,7 +654,7 @@ class FilterMaker {
             else if (modifier.value == NMaker.modifierOptions.numberRange) this.makeNumberRangeInput();
             else {
                 let priorValue = document.getElementById(this.attributes.id + "-input") ? document.getElementById(this.attributes.id + "-input").value : null;
-                this.makeBasicInput();
+                this.makeInputGroup();
                 if (priorValue) document.getElementById(this.attributes.id + "-input").value = priorValue;
             }
 
@@ -676,32 +678,16 @@ class FilterMaker {
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
         selector.onchange = () => {
-            if (this.attributes.useColumnFilter) this.updateColumnFilterBtn();
-            this.makeFilterInput();
-        };
+            this.makeInputGroup();
+            if (this.attributes.useModifier) {
+                this.makeModifierOptions();
+            }
+        }
 
         return selector;
     }
 
-    updateColumnFilterBtn() {
-        let btn = document.getElementById(this.attributes.id + "-col-filter");
-        let prop = document.getElementById(this.attributes.id + "-selector").value;
-
-        if (NMaker.hiddenHeadings.includes(prop)) btn.innerText = "Show";
-        else btn.innerText = "Hide";
-    }
-
-    makeFilterInput() {
-        let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
-
-        this.makeBasicInput(value);
-
-        if (this.attributes.useModifier) {
-            this.makeModifierOptions(value);
-        }
-    }
-
-    makeModifierOptions(value) {
+    makeModifierOptions() {
         //populate Modifier options
         let modifier = document.getElementById(this.attributes.id + "-modifier");
         modifier.hidden = false;
@@ -713,6 +699,7 @@ class FilterMaker {
         }
 
         //then add options according to selected data type
+        let value = document.getElementById(this.attributes.id + "-selector").value;
         switch (typeof value) {
             case "bigint":
             case "number":
@@ -750,10 +737,10 @@ class FilterMaker {
         }
     }
 
-    makeBasicInput(value) {
-        if (!value) value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
+    makeInputGroup() {
+        let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
 
-        //remove old input / inputs by clearing input-group
+        //make / remake input group and therefore inputs
         let inputGroup = NMaker.replaceElement(this.attributes.id + "-input-group", "div", this.attributes.classes.inputGroup);
 
         //basic input is only one input element so make that
@@ -808,6 +795,7 @@ class FilterMaker {
         if (this.attributes.useColumnFilter) {
             //currently selected prop
             let prop = document.getElementById(this.attributes.id + "-selector").value;
+            
             let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
 
             let toggleColBtn = NMaker.makeBtn(this.attributes.id + "-col-filter", btnName, () => {
