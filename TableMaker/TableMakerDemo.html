@@ -152,7 +152,9 @@
             table = new TableMaker({
                 id: "newTable",
                 parentSelector: "#table-container",
-                sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
+                //sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
+                sorting: ["all"],
+                noSorting: ["picture", "renting"],
                 hide: ["about", "renting", "address"],
                 currency: ["balance"],
                 link: [{

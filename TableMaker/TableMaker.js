@@ -218,6 +218,7 @@ class TableMaker {
             conditionalClasses: false,
             parentSelector: "body",
             sorting: false,
+            noSorting: false,
             sortingOrientation: {},
             currency: false,
             hide: false,
@@ -286,7 +287,7 @@ class TableMaker {
         // thead > tr > th
         for (let th of head.childNodes[0].childNodes) {
 
-            if (this.attributes.sorting.includes(th.value)) {
+            if (this.attributes.sorting.includes(th.value) || (this.attributes.sorting.includes("all") && !this.attributes.noSorting.includes(th.value))) {
                 //record the state of the sort button
                 if (this.attributes.sortingOrientation[th.value] == null) this.attributes.sortingOrientation[th.value] = "asc";
 
@@ -371,6 +372,7 @@ class TableMaker {
 
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
+            // TODO Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
             if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
                 let cc = { ...this.attributes.conditionalClasses[key] };
 
@@ -409,7 +411,7 @@ class TableMaker {
 
     fillTable() {
         let head = this.generateTableHead();
-        if (this.attributes.sorting) this.addSorting(head);
+        if (this.attributes.sorting || (this.attributes.sorting && this.attributes.sorting.includes("all") && this.attributes.noSorting)) this.addSorting(head);
 
         this.generateTableBody();
     }
