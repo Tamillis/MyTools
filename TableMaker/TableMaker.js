@@ -262,18 +262,20 @@ class TableMaker {
             //sort the exposed data based on its type
             NMaker.filteredData = NMaker.filteredData.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
-                switch (typeof currRow[column]) {
-                    case "number":
-                        sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
-                        break;
-                    case "string":
-                        sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
-                        break;
-                    case "object":
-                        if (currRow instanceof Date) sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
-                        break;
-                    default:
-                        sortOption = NMaker.sortOptions.alphabetical;
+                if(typeof prevRow[column] == typeof currRow[column]){
+                    switch (typeof currRow[column]) {
+                        case "number":
+                            sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                            break;
+                        case "string":
+                            sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
+                            break;
+                        case "object":
+                            if (currRow[column] instanceof Date) sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                            break;
+                        default:
+                            sortOption = NMaker.sortOptions.alphabetical;
+                    }
                 }
 
                 return NMaker.compare(sortOption, prevRow[column], currRow[column]);
@@ -714,7 +716,7 @@ class FilterMaker {
         }
 
         //then add options according to selected data type
-        let value = document.getElementById(this.attributes.id + "-selector").value;
+        let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
         switch (typeof value) {
             case "bigint":
             case "number":
@@ -927,15 +929,15 @@ class FilterMaker {
                     break;
                 case NMaker.modifierOptions.before:
                     if (!(row[prop] instanceof Date)) {
-                        console.Error("Cannot sort Date, data is not date");
-                        return;
+                        console.error("Cannot sort Date, data is not date");
+                        break;
                     }
                     if (Date.parse(row[prop]) < Date.parse(input.value)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.after:
                     if (!(row[prop] instanceof Date)) {
-                        console.Error("Cannot sort Date, data is not date");
-                        return;
+                        console.error("Cannot sort Date, data is not date");
+                        break;
                     }
                     if (Date.parse(row[prop]) > Date.parse(input.value)) filteredData.push(row);
                     break;
