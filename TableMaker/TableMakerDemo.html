@@ -55,8 +55,11 @@
         <p id="info" hidden></p>
     </div>
 
-    <div id="paginator-container" class="row"></div>
-    <div id="table-container" class="row"></div>
+    <div class="row">
+        <div id="paginator-container" class="col-2"></div>
+        <div id="filter-container" class="col-10"></div>
+        <div id="table-container" class="col-12"></div>
+    </div>
 
     <script defer>
         //courtesy https://stackoverflow.com/questions/27012854/how-to-change-iso-date-string-to-date-object
@@ -115,6 +118,7 @@
             removeOld(paginator);
             removeOld(filter);
             removeOld(table);
+            delete NMaker;
 
             makeSuiteTailored();
         }
@@ -138,17 +142,7 @@
                 buttons: NMaker.paginatorOptions.cycle
             });
 
-            filter = new FilterMaker({
-                parentSelector: "#table-container",
-                order: NMaker.sortOptions.alphabetical,
-                ignore: ["picture", "about"],
-                useModifier: true,
-                classes : {
-                    checkbox: ["form-input-check", "spacer"]
-                },
-                useColumnFilter : true
-            });
-
+            
             table = new TableMaker({
                 id: "newTable",
                 parentSelector: "#table-container",
@@ -183,13 +177,26 @@
                     phone : "Phone №"
                 }
             });
+            
+            filter = new FilterMaker({
+                parentSelector: "#filter-container",
+                order: NMaker.sortOptions.alphabetical,
+                ignore: ["picture", "about"],
+                useModifier: true,
+                classes : {
+                    checkbox: ["form-input-check", "spacer"]
+                },
+                useColumnFilter : true,
+                preselect : "balance"
+            });
         }
+        
 
         function makeSuiteDefaults() {
             NMaker.init(data);
             paginator = new PaginatorMaker();
-            filter = new FilterMaker();
             table = new TableMaker();
+            filter = new FilterMaker();
         }
     </script>
 </body>

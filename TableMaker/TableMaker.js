@@ -44,7 +44,7 @@ class NMaker {
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
     static toCapitalizedWords(name) {
         var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
-        return words.map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(" ") + " ";
+        return words.map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(" ");
     }
 
     //courtesy of https://stackoverflow.com/questions/16242449/regex-currency-validation
@@ -197,7 +197,7 @@ class NMaker {
         NMaker.filteredData = [...data];
         NMaker.pagedData = [...data];
         NMaker.data = Object.freeze(data);
-        NMaker.headings = Object.keys(data[0]);
+        for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);    //to be later changed to displayName
     }
 }
 
@@ -241,6 +241,11 @@ class TableMaker {
 
         NMaker.table = this;
         NMaker.hiddenHeadings = this.attributes.hide ? this.attributes.hide : [];
+        if (this.attributes.displayNames) {
+            for (let heading of Object.keys(this.attributes.displayNames)) {
+                NMaker.headings[heading] = this.attributes.displayNames[heading];
+            }
+        }
 
         document.addEventListener("updatedPageData", (e) => {
             this.data = NMaker.pagedData;
@@ -248,21 +253,25 @@ class TableMaker {
         });
 
         document.dispatchEvent(NMaker.updatedPageData);
-
-        NMaker.filter.makeInputGroup();
     }
 
     addSortBtn(column) {
-        let btnKind = this.attributes.sortingOrientation[column];  //the state of the button, "asc" or "desc"
-        let name = btnKind == "asc" ? "↑" : "↓";
+        //Note that as the updatedPagedData event is fired, the whole button gets remade which is why the btn function actually works
+
+        let btnKind = this.attributes.sortingOrientation[column];  //the state of the button, "unset", "asc" or "desc"
+        let name = btnKind == "unset" ? "↑↓" : btnKind == "asc" ? "↓" : "↑";
+
         return NMaker.makeBtn(this.attributes.id + "-" + column, name, () => {
-            //invert the state
-            this.attributes.sortingOrientation[column] = btnKind == "asc" ? "desc" : "asc";
+            //reset the state of other columns and invert the state of this column if necessary
+            for(let col in this.attributes.sortingOrientation) {
+                if(col == column) this.attributes.sortingOrientation[col] = btnKind == "asc" ? "desc" : "asc";
+                else this.attributes.sortingOrientation[col] = "unset";
+            }
 
             //sort the exposed data based on its type
             NMaker.filteredData = NMaker.filteredData.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
-                if(typeof prevRow[column] == typeof currRow[column]){
+                if (typeof prevRow[column] == typeof currRow[column]) {
                     switch (typeof currRow[column]) {
                         case "number":
                             sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
@@ -291,7 +300,7 @@ class TableMaker {
 
             if (this.attributes.sorting.includes(th.value) || (this.attributes.sorting.includes("all") && !this.attributes.noSorting.includes(th.value))) {
                 //record the state of the sort button
-                if (this.attributes.sortingOrientation[th.value] == null) this.attributes.sortingOrientation[th.value] = "asc";
+                if (this.attributes.sortingOrientation[th.value] == null) this.attributes.sortingOrientation[th.value] = "unset";
 
                 let btn = this.addSortBtn(th.value);
                 NMaker.addStylesToElement(btn, this.attributes.classes.button);
@@ -303,12 +312,12 @@ class TableMaker {
     generateTableHead() {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
-        for (let key of NMaker.headings) {
-            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
+        for (let heading of Object.keys(NMaker.headings)) {
+            if (this.attributes.hide && this.attributes.hide.includes(heading)) continue;
 
             let th = document.createElement("th");
 
-            th.value = key;
+            th.value = heading;
 
             NMaker.addStylesToElement(th, this.attributes.classes.th);
 
@@ -317,8 +326,8 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-            if (this.attributes.displayNames.hasOwnProperty(key)) span.innerText = this.attributes.displayNames[key];
-            else span.innerText = NMaker.toCapitalizedWords(key);
+
+            span.innerText = NMaker.headings[heading];
 
             headingContainer.appendChild(span);
             th.appendChild(headingContainer);
@@ -562,6 +571,7 @@ class FilterMaker {
             },
             ignore: false,
             order: NMaker.sortOptions.original,
+            preselect: false,
             useModifier: false,
             modifier: {
                 number: [NMaker.modifierOptions.equals, NMaker.modifierOptions.greaterThan, NMaker.modifierOptions.lessThan, NMaker.modifierOptions.not, NMaker.modifierOptions.numberRange],
@@ -590,6 +600,11 @@ class FilterMaker {
         this.data = NMaker.data;
         this.makeFilter();
         NMaker.filter = this;
+
+        document.addEventListener("updatedPageData", (e) => {
+            if(this.attributes.useModifier) document.getElementById(this.attributes.id+"-modifier").onchange();
+            else this.makeInputGroup();
+        });
     }
 
     makeFilter() {
@@ -597,7 +612,7 @@ class FilterMaker {
         let container = this.makeContainer(this.attributes.id, this.attributes.classes.container);
 
         //make selection container (reset btn, selector, & modifier if in use)
-        let selection = this.makeSelection();
+        let selection = this.makeSelectionContainer();
         container.appendChild(selection);
 
         //make the input container
@@ -629,7 +644,7 @@ class FilterMaker {
         return container;
     }
 
-    makeSelection() {
+    makeSelectionContainer() {
         //selection container
         let selectionContainer = this.makeContainer(this.attributes.id + "-selection-container", this.attributes.classes.selectionContainer);
 
@@ -685,11 +700,15 @@ class FilterMaker {
     makeSelector() {
         let selector = document.createElement("select");
         selector.id = this.attributes.id + "-selector";
-        for (let prop of NMaker.sort(Object.keys(this.data[0]), this.attributes.order)) {
-            if (this.attributes.ignore && this.attributes.ignore.includes(prop)) continue;
+        let options = NMaker.sort(Object.values(NMaker.headings), this.attributes.order);
+
+        for (let displayName of options) {
+            let key = Object.keys(NMaker.headings).find(key => NMaker.headings[key] === displayName);
+            if (this.attributes.ignore && this.attributes.ignore.includes(key)) continue;
             let opt = document.createElement("option");
-            opt.value = prop;
-            opt.innerText = NMaker.toCapitalizedWords(prop);
+            opt.value = key;
+            opt.innerText = NMaker.headings[key];
+            if (this.attributes.preselect && this.attributes.preselect.includes(key)) opt.selected = true;
             selector.appendChild(opt);
         }
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
@@ -717,6 +736,7 @@ class FilterMaker {
 
         //then add options according to selected data type
         let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
+
         switch (typeof value) {
             case "bigint":
             case "number":
@@ -809,35 +829,38 @@ class FilterMaker {
         inputGroup.appendChild(search);
 
         //If 'useColumnFilter' is true, add the column show/hide button
-        if (this.attributes.useColumnFilter) {
-            //currently selected prop
-            let prop = document.getElementById(this.attributes.id + "-selector").value;
-
-            let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
-
-            let toggleColBtn = NMaker.makeBtn(this.attributes.id + "-col-filter", btnName, () => {
-                //currently selected prop
-                let prop = document.getElementById(this.attributes.id + "-selector").value;
-
-                //check if current selected prop is on Table's hidden list
-                if (NMaker.hiddenHeadings.includes(prop)) {
-                    NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter((h) => h !== prop);
-                    toggleColBtn.innerText = "Hide";
-                }
-                else {
-                    NMaker.hiddenHeadings.push(prop);
-                    toggleColBtn.innerText = "Show";
-                }
-
-                // update table
-                document.dispatchEvent(NMaker.updatedData);
-                document.dispatchEvent(NMaker.updatedPageData);
-            }, this.attributes.classes.button);
-            inputGroup.appendChild(toggleColBtn);
-        }
+        if (this.attributes.useColumnFilter) inputGroup.appendChild(this.makeColToggleBtn());
 
         //attach to input container
         document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
+    }
+
+    makeColToggleBtn() {
+        //currently selected prop
+        let prop = document.getElementById(this.attributes.id + "-selector").value;
+
+        let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
+
+        let toggleColBtn = NMaker.makeBtn(this.attributes.id + "-col-filter", btnName, () => {
+            //currently selected prop
+            let prop = document.getElementById(this.attributes.id + "-selector").value;
+
+            //check if current selected prop is on Table's hidden list
+            if (NMaker.hiddenHeadings.includes(prop)) {
+                NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter((h) => h !== prop);
+                toggleColBtn.innerText = "Hide";
+            }
+            else {
+                NMaker.hiddenHeadings.push(prop);
+                toggleColBtn.innerText = "Show";
+            }
+
+            // update table
+            document.dispatchEvent(NMaker.updatedData);
+            document.dispatchEvent(NMaker.updatedPageData);
+        }, this.attributes.classes.button);
+
+        return toggleColBtn;
     }
 
     makeDateRangeInput() {
@@ -846,6 +869,9 @@ class FilterMaker {
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
         search.onclick = () => this.filter(NMaker.modifierOptions.dateRange);
         dateRangePicker.appendChild(search);
+
+        //If 'useColumnFilter' is true, add the column show/hide button
+        if (this.attributes.useColumnFilter) dateRangePicker.appendChild(this.makeColToggleBtn());
 
         //append input group to input container
         document.getElementById(this.attributes.id + "-input-container").appendChild(dateRangePicker);
@@ -856,6 +882,9 @@ class FilterMaker {
 
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => this.filter(NMaker.modifierOptions.numberRange), this.attributes.classes.button);
         numberRangePicker.appendChild(search);
+
+        //If 'useColumnFilter' is true, add the column show/hide button
+        if (this.attributes.useColumnFilter) numberRangePicker.appendChild(this.makeColToggleBtn());
 
         //append input group to input container
         document.getElementById(this.attributes.id + "-input-container").appendChild(numberRangePicker);
