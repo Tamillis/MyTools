@@ -20,7 +20,7 @@
       "age": 25,
       "eyeColor": "blue",
       "name": "Mullen Conner",
-      "gender": "male",
+      "gender": null,
       "company": "VIRVA",
       "email": "mullenconner@virva.com",
       "phone": "+1 (886) 402-3640",
@@ -38,8 +38,8 @@
       "gender": "female",
       "company": "ECOSYS",
       "email": "maryanneschwartz@ecosys.com",
-      "phone": "+1 (885) 569-2804",
-      "address": "732 Monroe Place, Elrama, Georgia, 8760",
+      "phone": null,
+      "address": null,
       "about": "Aute aliqua ipsum labore duis magna reprehenderit nulla occaecat adipisicing magna irure irure. Et adipisicing aute enim labore qui est amet ullamco. Magna elit sit et nulla irure ullamco deserunt culpa anim elit do. Nulla velit irure esse non id id commodo nisi et esse adipisicing aliquip. Sint ad est ipsum incididunt excepteur officia nisi ut. Ullamco voluptate in non veniam enim veniam ea.\r\n",
       "registered": "2017-01-21T09:01:45 -00:00",
       "renting": true
@@ -69,7 +69,7 @@
       "company": "INSURON",
       "email": "meyersroy@insuron.com",
       "phone": "+1 (975) 491-3006",
-      "address": "291 Jackson Court, Westwood, Colorado, 8876",
+      "address": null,
       "about": "Velit nulla nostrud duis ullamco cupidatat fugiat laboris exercitation aliqua. Anim irure cupidatat consectetur ad pariatur elit. Ex nisi veniam sit exercitation irure elit aliqua cupidatat Lorem ullamco excepteur sint amet.\r\n",
       "registered": "2017-07-06T12:46:09 -01:00",
       "renting": false
@@ -84,7 +84,7 @@
       "company": "ISOTERNIA",
       "email": "jacklynmaynard@isoternia.com",
       "phone": "+1 (850) 498-3578",
-      "address": "992 Nostrand Avenue, Cedarville, Missouri, 3436",
+      "address": null,
       "about": "Proident fugiat aliquip et ipsum ut cillum reprehenderit ad sit. Eu velit non veniam nulla proident tempor eiusmod mollit commodo irure proident amet sint. Dolor labore non cillum quis cupidatat non non laboris. Exercitation sint incididunt enim esse. Nulla excepteur et pariatur esse.\r\n",
       "registered": "2020-04-11T01:09:23 -01:00",
       "renting": true
@@ -99,7 +99,7 @@
       "company": "INTRADISK",
       "email": "boydpruitt@intradisk.com",
       "phone": "+1 (971) 580-3820",
-      "address": "435 Clinton Street, Fontanelle, Kentucky, 7904",
+      "address": null,
       "about": "Id mollit sint occaecat labore commodo aliqua non et est sunt et et ullamco. Quis anim aliquip in occaecat occaecat reprehenderit proident reprehenderit voluptate id minim et aliqua pariatur. Tempor sit eu ipsum laborum anim nulla. Lorem eu esse commodo qui deserunt exercitation incididunt tempor nostrud ad sit reprehenderit. Nulla Lorem adipisicing nulla do laboris. Eu laborum nisi ea id eu eu. Sit elit id excepteur cillum consequat consequat Lorem.\r\n",
       "registered": "2017-06-16T06:23:47 -01:00",
       "renting": false

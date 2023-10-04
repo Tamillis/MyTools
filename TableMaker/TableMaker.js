@@ -5,6 +5,7 @@ class NMaker {
     static filteredData = [];
     static headings = [];
     static hiddenHeadings = [];
+    static displayValues = {};
     static modifierOptions = Object.freeze({
         equals: "=",
         greaterThan: ">",
@@ -214,7 +215,8 @@ class TableMaker {
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
-            displayNames: false,
+            displayHeadings: false,
+            displayValues: false,
             conditionalClasses: false,
             parentSelector: "body",
             sorting: false,
@@ -241,9 +243,15 @@ class TableMaker {
 
         NMaker.table = this;
         NMaker.hiddenHeadings = this.attributes.hide ? this.attributes.hide : [];
-        if (this.attributes.displayNames) {
-            for (let heading of Object.keys(this.attributes.displayNames)) {
-                NMaker.headings[heading] = this.attributes.displayNames[heading];
+        if (this.attributes.displayHeadings) {
+            for (let heading of Object.keys(this.attributes.displayHeadings)) {
+                NMaker.headings[heading] = this.attributes.displayHeadings[heading];
+            }
+        }
+
+        if (this.attributes.displayValues) {
+            for (let displayValue in this.attributes.displayValues) {
+                NMaker.displayValues[displayValue] = this.attributes.displayValues[displayValue];
             }
         }
 
@@ -263,8 +271,8 @@ class TableMaker {
 
         return NMaker.makeBtn(this.attributes.id + "-" + column, name, () => {
             //reset the state of other columns and invert the state of this column if necessary
-            for(let col in this.attributes.sortingOrientation) {
-                if(col == column) this.attributes.sortingOrientation[col] = btnKind == "asc" ? "desc" : "asc";
+            for (let col in this.attributes.sortingOrientation) {
+                if (col == column) this.attributes.sortingOrientation[col] = btnKind == "asc" ? "desc" : "asc";
                 else this.attributes.sortingOrientation[col] = "unset";
             }
 
@@ -357,6 +365,8 @@ class TableMaker {
 
             //FORMAT DATA
             let content = data[key];
+
+            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value == data[key]) content = this.attributes.displayValues[key].displayValue;
 
             //Date
             if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
@@ -602,7 +612,7 @@ class FilterMaker {
         NMaker.filter = this;
 
         document.addEventListener("updatedPageData", (e) => {
-            if(this.attributes.useModifier) document.getElementById(this.attributes.id+"-modifier").onchange();
+            if (this.attributes.useModifier) document.getElementById(this.attributes.id + "-modifier").onchange();
             else this.makeInputGroup();
         });
     }
@@ -900,7 +910,11 @@ class FilterMaker {
         NMaker.addStylesToElement(input, this.attributes.classes.selector);
 
         let option = document.getElementById(this.attributes.id + "-selector").value;
-        let options = Array.from(new Set(NMaker.data.map(d => d[option])));
+        let options = Array.from(new Set(NMaker.data.map(datum => {
+            if(NMaker.displayValues[option] && datum[option] == NMaker.displayValues[option].value) return NMaker.displayValues[option].displayValue;
+            else return datum[option];
+        })));
+
         options.sort();
         this.attachOptions(input, options);
 
@@ -910,6 +924,9 @@ class FilterMaker {
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
         search.onclick = () => this.filter(NMaker.modifierOptions.match);
         inputGroup.appendChild(search);
+
+        //If 'useColumnFilter' is true, add the column show/hide button
+        if (this.attributes.useColumnFilter) inputGroup.appendChild(this.makeColToggleBtn());
 
         //append input group to input container
         document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
