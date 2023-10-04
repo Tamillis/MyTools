@@ -201,7 +201,11 @@
                     checkbox: ["form-input-check", "spacer"]
                 },
                 useColumnFilter : true,
-                preselect : "balance"
+                memory: {
+                    selection: "name",
+                    modifier: NMaker.modifierOptions.select,
+                    value: ""
+                }
             });
         }
         

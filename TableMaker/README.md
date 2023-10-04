@@ -147,7 +147,7 @@ In what way the presented data will be filtered, depending on the modifier. If n
 | `useModifier` | `true` or `false` |
 | `modifier` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `modifierOptions`. See below |
 | `useColumnFilter` | `true` or `false`, enables the showing and hiding of hidden columns of the table |
-|`preselect` | `false` by default, otherwise string of heading you want to be the default selection |
+| `memory` | Object with `selection` `modifier` and `value` properties. Defaults to being filled from `sessionStorage`, and holds the prior search parameters. Set this attribute to set starting search terms |
 
 
 ``` js
