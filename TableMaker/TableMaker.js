@@ -773,12 +773,12 @@ class FilterMaker {
         }
     }
 
-    attachOptions(selector, options) {
+    attachOptions(selector, values) {
         let isDefault = 1;
-        for (let modifier of options) {
+        for (let i = 0; i < values.length; i++) {
             let option = document.createElement("option");
-            option.value = modifier;
-            option.innerText = modifier;
+            option.value = values[i];
+            option.innerText = values[i];
             option.selected = isDefault++ == 1;
             selector.appendChild(option);
         }
@@ -911,7 +911,7 @@ class FilterMaker {
 
         let option = document.getElementById(this.attributes.id + "-selector").value;
         let options = Array.from(new Set(NMaker.data.map(datum => {
-            if(NMaker.displayValues[option] && datum[option] == NMaker.displayValues[option].value) return NMaker.displayValues[option].displayValue;
+            if (NMaker.displayValues[option] && datum[option] == NMaker.displayValues[option].value) return NMaker.displayValues[option].displayValue;
             else return datum[option];
         })));
 
@@ -938,37 +938,48 @@ class FilterMaker {
         this.data = NMaker.data;
 
         let filteredData = [];
-        let input = document.getElementById(this.attributes.id + "-input");
+        let inputValue = document.getElementById(this.attributes.id + "-input").value;
+
+
+        if (NMaker.displayValues[prop] && inputValue == NMaker.displayValues[prop].displayValue) inputValue = NMaker.displayValues[prop].value;
+
         let inputGroup = document.getElementById(this.attributes.id + "-input-group");
 
         for (let row of this.data) {
+            //little null catching trickery
+            if (row[prop] == null || inputValue == null) {
+                if (row[prop] == null && inputValue == null) filteredData.push(row);
+                continue;
+            }
+
+            //otherwise can do proper data comparison
             switch (type) {
                 case NMaker.modifierOptions.contains:
-                    if (row[prop].toString().toLowerCase().includes(input.value.toLowerCase())) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase().includes(inputValue.toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.boolean:
                     if (row[prop] == input.checked) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.date:
-                    if (Date.parse(row[prop]) == Date.parse(input.value)) filteredData.push(row);
+                    if (Date.parse(row[prop]) == Date.parse(inputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.match:
                 case NMaker.modifierOptions.equals:
                 case NMaker.modifierOptions.select:
-                    if (row[prop].toString().toLowerCase() == input.value.toLowerCase()) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase() == inputValue.toLowerCase()) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.not:
                 case NMaker.modifierOptions.excludes:
-                    if (row[prop].toString().toLowerCase() != input.value.toString().toLowerCase()) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase() != inputValue.toString().toLowerCase()) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.greaterThan:
-                    if (Number(row[prop]) > Number(input.value)) filteredData.push(row);
+                    if (Number(row[prop]) > Number(inputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.lessThan:
-                    if (Number(row[prop]) < Number(input.value)) filteredData.push(row);
+                    if (Number(row[prop]) < Number(inputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.startsWith:
-                    if (row[prop].toString().toLowerCase().startsWith(input.value.toString().toLowerCase())) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase().startsWith(inputValue.toString().toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.dateRange:
                     if (Date.parse(row[prop]) >= Date.parse(inputGroup.dataset.fromDate) && Date.parse(row[prop]) <= Date.parse(inputGroup.dataset.toDate)) filteredData.push(row);
