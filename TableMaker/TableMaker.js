@@ -724,10 +724,8 @@ class FilterMaker {
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
         selector.onchange = () => {
-            this.makeInputGroup();
-            if (this.attributes.useModifier) {
-                this.makeModifierOptions();
-            }
+            if (this.attributes.useModifier) this.makeModifierOptions();
+            else this.makeInputGroup();
         }
 
         return selector;
@@ -756,8 +754,7 @@ class FilterMaker {
                 this.attachOptions(modifier, this.attributes.modifier.string);
                 break;
             case "boolean":
-                modifier.hidden = true;
-                modifier.style.display = "none";
+                this.attachOptions(modifier, this.attributes.modifier.boolean);
                 break;
             case "object":
                 if (value instanceof Date) {
@@ -768,8 +765,11 @@ class FilterMaker {
             case "undefined":
                 console.error("Value is undefined");
                 break;
-            default:
-                throw new Error();
+        }
+
+        if(modifier.childNodes.length <= 1) {
+            modifier.hidden = true;
+            modifier.style.display = "none";
         }
 
         modifier.onchange();
@@ -820,7 +820,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = this.attributes.memory.value == true;
+                input.checked = this.attributes.memory.value == "on";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 search.onclick = () => this.filter(NMaker.modifierOptions.boolean);
                 break;
@@ -953,7 +953,7 @@ class FilterMaker {
     filter(type) {
         let selector = document.getElementById(this.attributes.id + "-selector");
         let prop = selector.value;
-        let inputValue = document.getElementById(this.attributes.id + "-input").value;
+        let inputValue = document.getElementById(this.attributes.id + "-input") !== null ? document.getElementById(this.attributes.id + "-input").value : "";
         if (NMaker.displayValues[prop] && inputValue == NMaker.displayValues[prop].displayValue) inputValue = NMaker.displayValues[prop].value;
 
         //record in memory
@@ -979,13 +979,13 @@ class FilterMaker {
                 continue;
             }
 
-            //otherwise can do proper data comparison
+                        //otherwise can do proper data comparison
             switch (type) {
                 case NMaker.modifierOptions.contains:
                     if (row[prop].toString().toLowerCase().includes(inputValue.toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.boolean:
-                    if (row[prop] == input.checked) filteredData.push(row);
+                    if (row[prop] == document.getElementById(this.attributes.id + "-input").checked) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.date:
                     if (Date.parse(row[prop]) == Date.parse(inputValue)) filteredData.push(row);
