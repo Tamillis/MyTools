@@ -42,6 +42,11 @@ class NMaker {
     static filter;
     static paginator;
 
+    //courtesy of https://stackoverflow.com/a/25047903
+    static isDate(str) {
+        return (new Date(str) !== "Invalid Date") && !isNaN(new Date(str));
+    }
+
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
     static toCapitalizedWords(name) {
         var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
@@ -124,11 +129,10 @@ class NMaker {
         return a;
     }
 
-    static makeDateRangePicker(id, classes) {
+    static makeDateRangePicker(id, classes, lower = null, upper = null) {
         //some defaults
-        let today = new Date();
-        let nextweek = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7);
-        let getDateValue = (t) => t.toISOString().split('T')[0];    //courtesy of https://stackoverflow.com/questions/28729634/set-values-in-input-type-date-and-time-in-javascript
+        let fromDateValue = NMaker.isDate(lower) ? lower : new Date().toISOString().split('T')[0];
+        let toDateValue = NMaker.isDate(upper) ? upper : new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 7).toISOString().split('T')[0];
 
         //replace or make the container
         let dateRangePicker = NMaker.replaceElement(id, "div");
@@ -136,19 +140,17 @@ class NMaker {
 
         //make from Date input
         let fromDateInput = document.createElement("input");
+        fromDateInput.id = id + "-lower";
         fromDateInput.type = "date";
-        fromDateInput.value = getDateValue(today);
-        dateRangePicker.dataset.fromDate = getDateValue(today);
+        fromDateInput.value = fromDateValue;
         NMaker.addStylesToElement(fromDateInput, classes.input);
-        fromDateInput.onchange = () => dateRangePicker.dataset.fromDate = fromDateInput.value;
 
         //make to Date input
         let toDateInput = document.createElement("input");
+        toDateInput.id = id + "-upper";
         toDateInput.type = "date";
-        toDateInput.value = getDateValue(nextweek);
-        dateRangePicker.dataset.toDate = getDateValue(nextweek);
+        toDateInput.value = toDateValue;
         NMaker.addStylesToElement(toDateInput, classes.input);
-        toDateInput.onchange = () => dateRangePicker.dataset.toDate = toDateInput.value;
 
         let toDateLabel = document.createElement("label");
         toDateLabel.innerText = "→";
@@ -162,7 +164,7 @@ class NMaker {
         return dateRangePicker;
     }
 
-    static makeNumberRangePicker(id, classes, lower = 0, upper = 1) {
+    static makeNumberRangePicker(id, classes, lower = null, upper = null) {
         //replace or make the container
         let numberRangePicker = NMaker.replaceElement(id, "div");
         NMaker.addStylesToElement(numberRangePicker, classes.inputGroup);
@@ -170,14 +172,16 @@ class NMaker {
         //make lower Number input
         let lowerNumberInput = document.createElement("input");
         lowerNumberInput.type = "number";
-        lowerNumberInput.placeholder = lower;
+        if (lower === null) lowerNumberInput.placeholder = 0;
+        else lowerNumberInput.value = lower;
         lowerNumberInput.id = id + "-lower";
         NMaker.addStylesToElement(lowerNumberInput, classes.input);
 
         //make upper number input
         let upperNumberInput = document.createElement("input");
         upperNumberInput.type = "number";
-        upperNumberInput.placeholder = upper;
+        if (upper === null) upperNumberInput.placeholder = 1;
+        else upperNumberInput.value = upper;
         upperNumberInput.id = id + "-upper";
         NMaker.addStylesToElement(upperNumberInput, classes.input);
 
@@ -592,7 +596,8 @@ class FilterMaker {
             memory: {
                 selection: sessionStorage.getItem("filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
                 modifier: sessionStorage.getItem("filter-memory-modifier") ?? NMaker.modifierOptions.contains,
-                value: sessionStorage.getItem("filter-memory-value") ?? ""
+                upperValue: sessionStorage.getItem("filter-memory-upper-value") ?? "",
+                lowerValue: sessionStorage.getItem("filter-memory-lower-value") ?? ""
             }
         };
 
@@ -617,7 +622,7 @@ class FilterMaker {
 
         document.addEventListener("updatedPageData", (e) => {
             if (this.attributes.useModifier) document.getElementById(this.attributes.id + "-modifier").onchange();
-            else this.makeInputGroup();
+            else this.makeSimpleInputGroup();
         });
     }
 
@@ -637,7 +642,7 @@ class FilterMaker {
         document.querySelector(this.attributes.parentSelector).appendChild(container);
 
         //create the initial input
-        this.makeInputGroup();
+        this.makeSimpleInputGroup();
 
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
@@ -695,10 +700,10 @@ class FilterMaker {
         let modifier = document.createElement("select");
         modifier.id = this.attributes.id + "-modifier";
         modifier.onchange = () => {
-            if (modifier.value == NMaker.modifierOptions.dateRange) this.makeDateRangeInput();
+            if (modifier.value == NMaker.modifierOptions.dateRange) this.makeDateRangeInputGroup();
             else if (modifier.value == NMaker.modifierOptions.select) this.makeSelectInput();
-            else if (modifier.value == NMaker.modifierOptions.numberRange) this.makeNumberRangeInput();
-            else this.makeInputGroup();
+            else if (modifier.value == NMaker.modifierOptions.numberRange) this.makeNumberRangeInputGroup();
+            else this.makeSimpleInputGroup();
 
             document.getElementById(this.attributes.id + "-search").onclick = () => this.filter(modifier.value);
         }
@@ -725,7 +730,7 @@ class FilterMaker {
 
         selector.onchange = () => {
             if (this.attributes.useModifier) this.makeModifierOptions();
-            else this.makeInputGroup();
+            else this.makeSimpleInputGroup();
         }
 
         return selector;
@@ -767,7 +772,7 @@ class FilterMaker {
                 break;
         }
 
-        if(modifier.childNodes.length <= 1) {
+        if (modifier.childNodes.length <= 1) {
             modifier.hidden = true;
             modifier.style.display = "none";
         }
@@ -780,12 +785,12 @@ class FilterMaker {
             let option = document.createElement("option");
             option.value = values[i];
             option.innerText = values[i];
-            if (option.value == this.attributes.memory.modifier || option.value == this.attributes.memory.value) option.selected = true;
+            if (option.value == this.attributes.memory.modifier || option.value == this.attributes.memory.lowerValue) option.selected = true;
             selector.appendChild(option);
         }
     }
 
-    makeInputGroup() {
+    makeSimpleInputGroup() {
         let type = typeof NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
         let value = NMaker.data[0][document.getElementById(this.attributes.id + "-selector").value];
 
@@ -804,7 +809,7 @@ class FilterMaker {
             case "number":
                 input.type = "number";
                 input.placeholder = 0;
-                if (Number(this.attributes.memory.value == "number") != NaN) input.value = this.attributes.memory.value;
+                if (Number(this.attributes.memory.lowerValue == "number") != NaN) input.value = this.attributes.memory.lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 search.onclick = () => this.filter(NMaker.modifierOptions.match);
                 break;
@@ -813,21 +818,21 @@ class FilterMaker {
                 break;
             case "string":
                 input.type = "text";
-                if (this.attributes.memory.value == "") input.placeholder = "Select...";
-                else input.value = this.attributes.memory.value;
+                if (this.attributes.memory.lowerValue == "") input.placeholder = "Select...";
+                else input.value = this.attributes.memory.lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 search.onclick = () => this.filter(NMaker.modifierOptions.contains);
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = this.attributes.memory.value == "on";
+                input.checked = this.attributes.memory.lowerValue == "on";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 search.onclick = () => this.filter(NMaker.modifierOptions.boolean);
                 break;
             case "object":
                 if (value instanceof Date) {
                     input.type = "date";
-                    if (this.attributes.memory.value instanceof Date) input.value = this.attributes.memory.value
+                    if (NMaker.isDate(this.attributes.memory.lowerValue)) input.value = this.attributes.memory.lowerValue;
                     else input.value = new Date().toISOString().split('T')[0];
                     NMaker.addStylesToElement(input, this.attributes.classes.input);
                     search.onclick = () => this.filter(NMaker.modifierOptions.date);
@@ -882,8 +887,8 @@ class FilterMaker {
         return toggleColBtn;
     }
 
-    makeDateRangeInput() {
-        let dateRangePicker = NMaker.makeDateRangePicker(this.attributes.id + "-input-group", this.attributes.classes);
+    makeDateRangeInputGroup() {
+        let dateRangePicker = NMaker.makeDateRangePicker(this.attributes.id + "-input-group", this.attributes.classes, this.attributes.memory.lowerValue, this.attributes.memory.upperValue);
 
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => null, this.attributes.classes.button);
         search.onclick = () => this.filter(NMaker.modifierOptions.dateRange);
@@ -896,8 +901,8 @@ class FilterMaker {
         document.getElementById(this.attributes.id + "-input-container").appendChild(dateRangePicker);
     }
 
-    makeNumberRangeInput() {
-        let numberRangePicker = NMaker.makeNumberRangePicker(this.attributes.id + "-input-group", this.attributes.classes);
+    makeNumberRangeInputGroup() {
+        let numberRangePicker = NMaker.makeNumberRangePicker(this.attributes.id + "-input-group", this.attributes.classes, this.attributes.memory.lowerValue, this.attributes.memory.upperValue);
 
         let search = NMaker.makeBtn(this.attributes.id + "-search", "Search", () => this.filter(NMaker.modifierOptions.numberRange), this.attributes.classes.button);
         numberRangePicker.appendChild(search);
@@ -927,7 +932,7 @@ class FilterMaker {
         options.sort();
         this.attachOptions(input, options);
 
-        if (this.attributes.memory.value == "") {
+        if (this.attributes.memory.lowerValue == "") {
             let placeholderOption = document.createElement("option");
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
@@ -950,85 +955,97 @@ class FilterMaker {
         document.getElementById(this.attributes.id + "-input-container").appendChild(inputGroup);
     }
 
-    filter(type) {
-        let selector = document.getElementById(this.attributes.id + "-selector");
-        let prop = selector.value;
-        let inputValue = document.getElementById(this.attributes.id + "-input") !== null ? document.getElementById(this.attributes.id + "-input").value : "";
-        if (NMaker.displayValues[prop] && inputValue == NMaker.displayValues[prop].displayValue) inputValue = NMaker.displayValues[prop].value;
+    filter(modifierOption) {
+        //Get the correct data for the filter to filter by input or input group
+        let prop = document.getElementById(this.attributes.id + "-selector").value;
+        let lowerInputValue;
+        let upperInputValue;
+
+        if (modifierOption == NMaker.modifierOptions.dateRange || modifierOption == NMaker.modifierOptions.numberRange) {
+            //inputGroup is used by the dateRange and numberRange
+            lowerInputValue = document.getElementById(this.attributes.id + "-input-group-lower").value;
+            upperInputValue = document.getElementById(this.attributes.id + "-input-group-upper").value;
+        }
+        else {
+            lowerInputValue = document.getElementById(this.attributes.id + "-input") !== null ? document.getElementById(this.attributes.id + "-input").value : "";
+        }
+
+        //correct input display value to actual data values
+        if (NMaker.displayValues[prop] && lowerInputValue == NMaker.displayValues[prop].displayValue) lowerInputValue = NMaker.displayValues[prop].value;
 
         //record in memory
         sessionStorage.setItem("filter-memory-selection", prop);
-        sessionStorage.setItem("filter-memory-modifier", type);
-        sessionStorage.setItem("filter-memory-value", inputValue);
+        sessionStorage.setItem("filter-memory-modifier", modifierOption);
+        sessionStorage.setItem("filter-memory-lower-value", lowerInputValue);
+        sessionStorage.setItem("filter-memory-upper-value", upperInputValue);
         this.attributes.memory = {
             selection: prop,
-            modifier: type,
-            value: inputValue
+            modifier: modifierOption,
+            lowerValue: lowerInputValue,
+            upperValue: upperInputValue
         }
 
+        //reset data in case it was filtered before
         this.data = NMaker.data;
-        let filteredData = [];
 
-        //inputGroup is used by the dateRange and numberRange
-        let inputGroup = document.getElementById(this.attributes.id + "-input-group");
+        //new filtered data to fill in empty array
+        let filteredData = [];
 
         for (let row of this.data) {
             //little null catching trickery
-            if (row[prop] == null || inputValue == null) {
-                if (row[prop] == null && inputValue == null) filteredData.push(row);
+            if (row[prop] == null || lowerInputValue == null) {
+                if (row[prop] == null && lowerInputValue == null) filteredData.push(row);
                 continue;
             }
 
-                        //otherwise can do proper data comparison
-            switch (type) {
+            //otherwise can do proper data comparison
+            switch (modifierOption) {
                 case NMaker.modifierOptions.contains:
-                    if (row[prop].toString().toLowerCase().includes(inputValue.toLowerCase())) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase().includes(lowerInputValue.toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.boolean:
                     if (row[prop] == document.getElementById(this.attributes.id + "-input").checked) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.date:
-                    if (Date.parse(row[prop]) == Date.parse(inputValue)) filteredData.push(row);
+                    if (Date.parse(row[prop]) == Date.parse(lowerInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.match:
                 case NMaker.modifierOptions.equals:
                 case NMaker.modifierOptions.select:
-                    if (row[prop].toString().toLowerCase() == inputValue.toLowerCase()) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase() == lowerInputValue.toLowerCase()) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.not:
                 case NMaker.modifierOptions.excludes:
-                    if (!row[prop].toString().toLowerCase().includes(inputValue.toString().toLowerCase())) filteredData.push(row);
+                    if (!row[prop].toString().toLowerCase().includes(lowerInputValue.toString().toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.greaterThan:
-                    if (Number(row[prop]) > Number(inputValue)) filteredData.push(row);
+                    if (Number(row[prop]) > Number(lowerInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.lessThan:
-                    if (Number(row[prop]) < Number(inputValue)) filteredData.push(row);
+                    if (Number(row[prop]) < Number(lowerInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.startsWith:
-                    if (row[prop].toString().toLowerCase().startsWith(inputValue.toString().toLowerCase())) filteredData.push(row);
+                    if (row[prop].toString().toLowerCase().startsWith(lowerInputValue.toString().toLowerCase())) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.dateRange:
-                    if (Date.parse(row[prop]) >= Date.parse(inputGroup.dataset.fromDate) && Date.parse(row[prop]) <= Date.parse(inputGroup.dataset.toDate)) filteredData.push(row);
+                    if (Date.parse(row[prop]) >= Date.parse(lowerInputValue) && Date.parse(row[prop]) <= Date.parse(upperInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.before:
                     if (!(row[prop] instanceof Date)) {
                         console.error("Cannot sort Date, data is not date");
                         break;
                     }
-                    if (Date.parse(row[prop]) < Date.parse(inputValue)) filteredData.push(row);
+                    if (Date.parse(row[prop]) < Date.parse(lowerInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.after:
                     if (!(row[prop] instanceof Date)) {
                         console.error("Cannot sort Date, data is not date");
                         break;
                     }
-                    if (Date.parse(row[prop]) > Date.parse(inputValue)) filteredData.push(row);
+                    if (Date.parse(row[prop]) > Date.parse(lowerInputValue)) filteredData.push(row);
                     break;
                 case NMaker.modifierOptions.numberRange:
-                    let lowerInput = document.getElementById(inputGroup.id + "-lower");
-                    let upperInput = document.getElementById(inputGroup.id + "-upper");
-                    if (row[prop] < upperInput.value && row[prop] > lowerInput.value) filteredData.push(row);
+                    if (row[prop] < upperInputValue && row[prop] > lowerInputValue) filteredData.push(row);
             }
         }
 
