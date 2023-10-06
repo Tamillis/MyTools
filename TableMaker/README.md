@@ -28,6 +28,7 @@ The styling defaults make plentiful use of Bootstrap, but it is not required (al
     - [Modifier](#modifier)
     - [Input](#input)
     - [API](#api-1)
+  - [MultiFilter](#multifilter)
 
 ### Common Attributes
 Attributes don't have to be provided, they fall back on defaults.
@@ -184,3 +185,9 @@ NMaker.modifierOptions = Object.freeze({
     select: "Select"
 });
 ```
+
+## MultiFilter
+The major drawback of the filter is the ability to only filter by one condition at a time. There needs to be a way to Add filters dynamically, and all their search criteria be used when clicking "search".
+
+The original filter has the `original: true` property, and before the reset button a plus button. Clicking it makes a new sub-filter, which is just the selector (modifier, if used) and input (no search or show/hide). The sub-filter has a minus button, that gets rid of that subfilter.
+- Search button is going to have to be disconnected from the input groups, and the input group changing is going to have to push to a stack of filter calls (as the search button itself can no longer hold the filter function)

@@ -58,6 +58,7 @@
     <div class="row">
         <div id="paginator-container" class="col-2"></div>
         <div id="filter-container" class="col-10"></div>
+        <p>Showing: <span id="filter-search-history"></span></p>
         <div id="table-container" class="col-12"></div>
     </div>
 
@@ -91,7 +92,8 @@
 
         let visible = false;
         let paginator;
-        let filter;
+        let filter1;
+        let filter2;
         let table;
 
         function showRaw(el) {
@@ -116,7 +118,7 @@
 
         function makeTailored() {
             removeOld(paginator);
-            removeOld(filter);
+            removeOld(filter1);
             removeOld(table);
             delete NMaker;
 
@@ -125,7 +127,7 @@
 
         function makeDefaults() {
             removeOld(paginator);
-            removeOld(filter);
+            removeOld(filter1);
             removeOld(table);
             delete NMaker;
 
@@ -192,7 +194,26 @@
                 }
             });
             
-            filter = new FilterMaker({
+            filter1 = new FilterMaker({
+                id: "f1",
+                parentSelector: "#filter-container",
+                order: NMaker.sortOptions.alphabetical,
+                ignore: ["picture", "about"],
+                useModifier: true,
+                classes : {
+                    checkbox: ["form-input-check", "spacer"]
+                },
+                useColumnFilter : true,
+                memory: {
+                    selection: "name",
+                    modifier: NMaker.modifierOptions.select,
+                    lowerValue: "",
+                    upperValue: ""
+                }
+            });
+
+            filter2 = new FilterMaker({
+                id: "f2",
                 parentSelector: "#filter-container",
                 order: NMaker.sortOptions.alphabetical,
                 ignore: ["picture", "about"],
@@ -215,7 +236,7 @@
             NMaker.init(data);
             paginator = new PaginatorMaker();
             table = new TableMaker();
-            filter = new FilterMaker();
+            filter1 = new FilterMaker();
         }
     </script>
 </body>

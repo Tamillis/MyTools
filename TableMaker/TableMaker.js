@@ -6,6 +6,8 @@ class NMaker {
     static headings = [];
     static hiddenHeadings = [];
     static displayValues = {};
+    static searchHistory = "";
+
     static modifierOptions = Object.freeze({
         equals: "=",
         greaterThan: ">",
@@ -27,7 +29,6 @@ class NMaker {
         bookend: "Bookend",
         cycle: "Cycle"
     });
-
     static sortOptions = Object.freeze({
         original: "Original",
         alphabetical: "Alphabetical",
@@ -616,10 +617,11 @@ class FilterMaker {
             ...attributes.modifier
         }
 
-        this.data = NMaker.data;
+        //make and set filter reference
         this.makeFilter();
         NMaker.filter = this;
 
+        //call updatedPageData so that filter creation can be done with cross-dependencies
         document.addEventListener("updatedPageData", (e) => {
             if (this.attributes.useModifier) document.getElementById(this.attributes.id + "-modifier").onchange();
             else this.makeSimpleInputGroup();
@@ -677,6 +679,8 @@ class FilterMaker {
             NMaker.pagedData = NMaker.data;
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
+            NMaker.searchHistory = "";
+            document.getElementById("filter-search-history") ? document.getElementById("filter-search-history").innerText = "" : null;
         }, this.attributes.classes.button)
         selectionInputGroup.appendChild(resetBtn);
 
@@ -957,18 +961,27 @@ class FilterMaker {
 
     filter(modifierOption) {
         //Get the correct data for the filter to filter by input or input group
-        let prop = document.getElementById(this.attributes.id + "-selector").value;
+        let selector = document.getElementById(this.attributes.id + "-selector");
+        let prop = selector.value;
         let lowerInputValue;
         let upperInputValue;
+
+        NMaker.searchHistory += `, ${selector.options[selector.selectedIndex].text} ${modifierOption} `;
 
         if (modifierOption == NMaker.modifierOptions.dateRange || modifierOption == NMaker.modifierOptions.numberRange) {
             //inputGroup is used by the dateRange and numberRange
             lowerInputValue = document.getElementById(this.attributes.id + "-input-group-lower").value;
             upperInputValue = document.getElementById(this.attributes.id + "-input-group-upper").value;
+            NMaker.searchHistory += `${lowerInputValue} + ${upperInputValue}`;
         }
         else {
             lowerInputValue = document.getElementById(this.attributes.id + "-input") !== null ? document.getElementById(this.attributes.id + "-input").value : "";
+            NMaker.searchHistory += `${lowerInputValue}`;
         }
+
+        if (NMaker.searchHistory[0] == ",") NMaker.searchHistory = NMaker.searchHistory.slice(2);
+        let searchHistory = document.getElementById("filter-search-history");
+        if(searchHistory) searchHistory.innerText = NMaker.searchHistory;
 
         //correct input display value to actual data values
         if (NMaker.displayValues[prop] && lowerInputValue == NMaker.displayValues[prop].displayValue) lowerInputValue = NMaker.displayValues[prop].value;
@@ -985,13 +998,10 @@ class FilterMaker {
             upperValue: upperInputValue
         }
 
-        //reset data in case it was filtered before
-        this.data = NMaker.data;
-
         //new filtered data to fill in empty array
         let filteredData = [];
 
-        for (let row of this.data) {
+        for (let row of NMaker.filteredData) {
             //little null catching trickery
             if (row[prop] == null || lowerInputValue == null) {
                 if (row[prop] == null && lowerInputValue == null) filteredData.push(row);
