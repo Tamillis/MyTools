@@ -194,8 +194,8 @@
                 }
             });
             
-            filter1 = new FilterMaker({
-                id: "f1",
+            filter = new FilterMaker({
+                id: "f",
                 parentSelector: "#filter-container",
                 order: NMaker.sortOptions.alphabetical,
                 ignore: ["picture", "about"],
@@ -204,27 +204,10 @@
                     checkbox: ["form-input-check", "spacer"]
                 },
                 useColumnFilter : true,
+                useSubFilter : true,
                 memory: {
                     selection: "name",
-                    modifier: NMaker.modifierOptions.select,
-                    lowerValue: "",
-                    upperValue: ""
-                }
-            });
-
-            filter2 = new FilterMaker({
-                id: "f2",
-                parentSelector: "#filter-container",
-                order: NMaker.sortOptions.alphabetical,
-                ignore: ["picture", "about"],
-                useModifier: true,
-                classes : {
-                    checkbox: ["form-input-check", "spacer"]
-                },
-                useColumnFilter : true,
-                memory: {
-                    selection: "name",
-                    modifier: NMaker.modifierOptions.select,
+                    option: NMaker.filterOptions.select,
                     lowerValue: "",
                     upperValue: ""
                 }
