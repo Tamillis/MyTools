@@ -34,6 +34,11 @@
             height: 2rem;
             width: 2rem;
         }
+
+        .min-width-is-height {
+            min-width: 2.5rem;
+            height: 2.5rem;
+        }
     </style>
     <script src="TableMaker.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -201,16 +206,17 @@
                 ignore: ["picture", "about"],
                 useModifier: true,
                 classes : {
-                    checkbox: ["form-input-check", "spacer"]
+                    checkbox: ["form-input-check", "spacer"],
+                    button: ["btn", "btn-sm", "btn-outline-primary", "min-width-is-height"]
                 },
                 useColumnFilter : true,
                 useSubFilter : true,
-                memory: {
-                    selection: "name",
-                    option: NMaker.filterOptions.select,
-                    lowerValue: "",
-                    upperValue: ""
-                }
+                // memory: {
+                //     selection: "name",
+                //     option: NMaker.filterOptions.select,
+                //     lowerValue: "",
+                //     upperValue: ""
+                // }
             });
         }
         

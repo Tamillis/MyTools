@@ -61,7 +61,7 @@ class NMaker {
 
     //courtesy of https://stackoverflow.com/a/25047903
     static isDate(str) {
-        return (new Date(str) !== "Invalid Date") && !isNaN(new Date(str));
+        return str !== null && (new Date(str) !== "Invalid Date") && !isNaN(new Date(str));
     }
 
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
@@ -611,20 +611,14 @@ class FilterMaker {
             ignore: false,
             order: NMaker.sortOptions.original,
             useModifier: false,
-            modifier: {
+            modifiers: {
                 number: [NMaker.filterOptions.equals, NMaker.filterOptions.greaterThan, NMaker.filterOptions.lessThan, NMaker.filterOptions.not, NMaker.filterOptions.numberRange],
                 string: [NMaker.filterOptions.contains, NMaker.filterOptions.select, NMaker.filterOptions.startsWith, NMaker.filterOptions.match, NMaker.filterOptions.excludes],
                 date: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange, NMaker.filterOptions.before, NMaker.filterOptions.after],
                 boolean: [NMaker.filterOptions.boolean]
             },
             useColumnFilter: false,
-            useSubFilter: false,
-            memory: {
-                selection: sessionStorage.getItem("filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
-                option: sessionStorage.getItem("filter-memory-modifier") ?? NMaker.filterOptions.contains,
-                upperValue: sessionStorage.getItem("filter-memory-upper-value") ?? "",
-                lowerValue: sessionStorage.getItem("filter-memory-lower-value") ?? ""
-            }
+            useSubFilter: false
         };
 
         this.attributes = {
@@ -632,20 +626,44 @@ class FilterMaker {
             ...attributes
         }
 
+        if (!this.attributes.memory) {
+            this.attributes.memory = {
+                selection: sessionStorage.getItem(this.attributes.id + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
+                option: sessionStorage.getItem(this.attributes.id + "-filter-memory-modifier") ?? NMaker.filterOptions.contains,
+                upperValue: sessionStorage.getItem(this.attributes.id + "-filter-memory-upper-value") ?? "",
+                lowerValue: sessionStorage.getItem(this.attributes.id + "-filter-memory-lower-value") ?? ""
+            }
+        }
+
         this.attributes.classes = {
             ...this.attributeDefaults.classes,
             ...attributes.classes
         };
 
-        this.attributes.modifier = {
-            ...this.attributeDefaults.modifier,
+        this.attributes.modifiers = {
+            ...this.attributeDefaults.modifiers,
             ...attributes.modifier
         }
 
-        //the stack of filters to apply when the search btn is clicked, as an array of objects:
-        // {option: NMaker.filterOption, selection: property of the data, lowerValue: the input lower value, upperValue: the inputer upper value if any}
-        this.filterStack = [];
-        this.filterIds = [this.attributes.id];
+        //used to enable the creation of subfilters
+        this.filterIds = sessionStorage.getItem(this.attributes.id + "-ids");
+        if (this.filterIds) this.filterIds = this.filterIds.split(",");
+        else this.filterIds = [this.attributes.id];
+
+        this.memory = {};
+        this.memory[this.attributes.id] = this.attributes.memory;
+
+        if (this.filterIds.length > 1) {
+            for (let i = 1; i < this.filterIds.length; i++) {
+
+                this.memory[this.filterIds[i]] = {
+                    selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
+                    option: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-modifier") ?? NMaker.filterOptions.contains,
+                    upperValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-upper-value") ?? "",
+                    lowerValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-lower-value") ?? ""
+                };
+            }
+        }
 
         //make filter
         this.makeFilter();
@@ -659,51 +677,51 @@ class FilterMaker {
 
     makeFilter() {
         //make outer container
-        let container = this.makeContainer(this.attributes.id, this.attributes.classes.container);
+        let container = this.makeContainer(this.attributes.id + "-outer", this.attributes.classes.container);
+        //attach container to DOM
+        NMaker.dom(this.attributes.parentSelector).appendChild(container);
 
         //make the button controls (add another filter, reset button)
         let btnControls = this.makeBtnControlsContainer();
         container.appendChild(btnControls);
 
-        //make selection container (selector, & modifier if in use)
-        let selection = this.makeSelectionContainer();
-        container.appendChild(selection);
-
-        //make the input container
-        let input = this.makeContainer(this.attributes.id + "-input-container", this.attributes.classes.inputContainer);
-        container.appendChild(input);
+        //make filter container
+        let filterContainer = this.makeContainer(this.attributes.id + "-filters");
+        container.appendChild(filterContainer);
 
         //make the search button
         let searchBtn = this.makeSearchBtn();
         container.appendChild(searchBtn);
 
-        //attach container to DOM
-        NMaker.dom(this.attributes.parentSelector).appendChild(container);
-
-        //create the initial input
-        this.makeSimpleInputGroup(this.attributes.id);
+        //main filter is now just a sub filter like any other
+        this.makeSubFilter(this.attributes.id);
 
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
             this.makeModifierOptions();
         }
+
+        //create subfilters if memory calls for them
+        if (this.filterIds.length > 1) for (let i = 1; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
     }
 
-
-    makeSubFilter() {
+    makeSubFilter(id = null) {
         //a sub filter has only its own selection section and input section (no search box, reset btn, etc)
 
         //the subfilter has its own ID and uses that to piggy back on all the other filter maker functions
-        let id = this.attributes.id + this.filterIds.length;
-
-        //push id of subfilter to filterIds
-        this.filterIds.push(id);
+        if (id == null) {
+            id = this.attributes.id + this.filterIds.length;
+            //push id of subfilter to filterIds
+            this.filterIds.push(id);
+            this.memory[id] = {};
+        }
 
         //make outer container
         let container = this.makeContainer(id, this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
         let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
+            if(this.filterIds.length == 1) return;
             this.filterIds = this.filterIds.filter(fid => fid !== id);
             NMaker.dom(id).remove();
         }, this.attributes.classes.button);
@@ -718,7 +736,7 @@ class FilterMaker {
         container.appendChild(input);
 
         //attach container to DOM
-        NMaker.dom(this.attributes.parentSelector).appendChild(container);
+        NMaker.dom(this.attributes.id + "-filters").appendChild(container);
 
         //create the initial input
         this.makeSimpleInputGroup(id);
@@ -789,30 +807,42 @@ class FilterMaker {
             NMaker.resetData();
 
             //make the filter stack
-            this.filterStack = [];
+            this.memory = {};
             for (let filterId of this.filterIds) {
                 let selection = NMaker.dom(filterId + "-selector").value;
                 let lowerValue = NMaker.dom(filterId + "-input") == null ? "" : NMaker.dom(filterId + "-input").value;
                 let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(lowerValue);
-                let upperValue = null
-                if (option.value == NMaker.filterOptions.dateRange || option.value == NMaker.filterOptions.numberRange) {
+                let upperValue = null;
+
+                if (option == NMaker.filterOptions.dateRange || option == NMaker.filterOptions.numberRange) {
                     //inputGroup is used by the dateRange and numberRange
                     lowerValue = NMaker.dom(filterId + "-input-group-lower").value;
                     upperValue = NMaker.dom(filterId + "-input-group-upper").value;
                 }
+                else if (option == NMaker.filterOptions.boolean) {
+                    lowerValue = NMaker.dom(filterId + "-input").checked;
+                }
 
-                this.filterStack.push({
+                this.memory[filterId] = {
                     option: option,
                     selection: selection,
                     lowerValue: lowerValue,
                     upperValue: upperValue
-                });
+                };
 
                 this.updateFilterSearchHistory(filterId, option, lowerValue, upperValue);
+
+                //record in memory
+                sessionStorage.setItem(filterId + "-filter-memory-selection", selection);
+                sessionStorage.setItem(filterId + "-filter-memory-modifier", option);
+                sessionStorage.setItem(filterId + "-filter-memory-lower-value", lowerValue);
+                sessionStorage.setItem(filterId + "-filter-memory-upper-value", upperValue);
             }
 
+            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
+
             //use the filter stack to apply a sequence of filters
-            for (let filter of this.filterStack) {
+            for (let filter of Object.values(this.memory)) {
                 this.filter(filter.option, filter.selection, filter.lowerValue, filter.upperValue);
             }
 
@@ -847,7 +877,7 @@ class FilterMaker {
             if (this.attributes.ignore && this.attributes.ignore.includes(heading)) continue;
             let opt = document.createElement("option");
             opt.value = heading;
-            if (opt.value == this.attributes.memory.selection) opt.selected = true;
+            if (opt.value == this.memory[id].selection) opt.selected = true;
             opt.innerText = NMaker.headings[heading];
             selector.appendChild(opt);
         }
@@ -879,17 +909,17 @@ class FilterMaker {
         switch (typeof value) {
             case "bigint":
             case "number":
-                this.attachOptions(modifier, this.attributes.modifier.number);
+                this.attachOptions(modifier, this.attributes.modifiers.number, this.memory[id].option);
                 break;
             case "string":
-                this.attachOptions(modifier, this.attributes.modifier.string);
+                this.attachOptions(modifier, this.attributes.modifiers.string, this.memory[id].option);
                 break;
             case "boolean":
-                this.attachOptions(modifier, this.attributes.modifier.boolean);
+                this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
                 break;
             case "object":
                 if (value instanceof Date) {
-                    this.attachOptions(modifier, this.attributes.modifier.date);
+                    this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
                 }
                 else console.error("Invalid object value found");
                 break;
@@ -906,13 +936,13 @@ class FilterMaker {
         modifier.onchange();
     }
 
-    attachOptions(selector, values) {
+    attachOptions(parent, values, selectedValue) {
         for (let i = 0; i < values.length; i++) {
             let option = document.createElement("option");
             option.value = values[i];
             option.innerText = values[i];
-            if (option.value == this.attributes.memory.option || option.value == this.attributes.memory.lowerValue) option.selected = true;
-            selector.appendChild(option);
+            if (option.value == selectedValue) option.selected = true;
+            parent.appendChild(option);
         }
     }
 
@@ -955,7 +985,7 @@ class FilterMaker {
             case "number":
                 input.type = "number";
                 input.placeholder = 0;
-                if (Number(this.attributes.memory.lowerValue == "number") != NaN) input.value = this.attributes.memory.lowerValue;
+                if (Number(this.memory[id].lowerValue == "number") != NaN) input.value = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
             case "undefined":
@@ -963,19 +993,19 @@ class FilterMaker {
                 break;
             case "string":
                 input.type = "text";
-                if (this.attributes.memory.lowerValue == "") input.placeholder = "Select...";
-                else input.value = this.attributes.memory.lowerValue;
+                if (!this.memory[id].lowerValue || this.memory[id].lowerValue == "") input.placeholder = "Select...";
+                else input.value = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = this.attributes.memory.lowerValue == "on";
+                input.checked = JSON.parse(this.memory[id].lowerValue);
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "object":
                 if (value instanceof Date) {
                     input.type = "date";
-                    if (NMaker.isDate(this.attributes.memory.lowerValue)) input.value = this.attributes.memory.lowerValue;
+                    if (NMaker.isDate(this.memory[id].lowerValue)) input.value = this.memory[id].lowerValue;
                     else input.value = new Date().toISOString().split('T')[0];
                     NMaker.addStylesToElement(input, this.attributes.classes.input);
                 }
@@ -1024,18 +1054,14 @@ class FilterMaker {
     }
 
     makeDateRangeInputGroup(id) {
-        let dateRangePicker = NMaker.makeDateRangePicker(id + "-input-group", this.attributes.classes, this.attributes.memory.lowerValue, this.attributes.memory.upperValue);
-
-        //TODO add back in dateRange filter to search stack
+        let dateRangePicker = NMaker.makeDateRangePicker(id + "-input-group", this.attributes.classes, this.memory[id].lowerValue, this.memory[id].upperValue);
 
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(dateRangePicker);
     }
 
     makeNumberRangeInputGroup(id) {
-        let numberRangePicker = NMaker.makeNumberRangePicker(id + "-input-group", this.attributes.classes, this.attributes.memory.lowerValue, this.attributes.memory.upperValue);
-
-        //TODO: add back in search numberRange filter
+        let numberRangePicker = NMaker.makeNumberRangePicker(id + "-input-group", this.attributes.classes, this.memory[id].lowerValue, this.memory[id].upperValue);
 
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(numberRangePicker);
@@ -1057,9 +1083,9 @@ class FilterMaker {
         })));
 
         options.sort();
-        this.attachOptions(input, options);
+        this.attachOptions(input, options, this.memory[id].lowerValue);
 
-        if (this.attributes.memory.lowerValue == "") {
+        if (this.memory[id].lowerValue == "") {
             let placeholderOption = document.createElement("option");
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
@@ -1070,21 +1096,18 @@ class FilterMaker {
 
         inputGroup.appendChild(input);
 
-        //TODO add back in search select match filter
-
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(inputGroup);
     }
 
     updateFilterSearchHistory(id, filterOption, lowerValue, upperValue = null) {
-        //Update Search history. TODO: put this in a more appropriate location
         let selector = NMaker.dom(id + "-selector");
         NMaker.searchHistory += `, ${selector.options[selector.selectedIndex].text} ${filterOption} ${lowerValue}`;
         if (upperValue) NMaker.searchHistory += ` + ${upperValue}`;
         if (NMaker.searchHistory[0] == ",") NMaker.searchHistory = NMaker.searchHistory.slice(2);
         let searchHistory = NMaker.dom("filter-search-history");
         if (searchHistory) searchHistory.innerText = NMaker.searchHistory;
-    } 
+    }
 
     filter(filterOption, col, lowerValue, upperValue = null) {
         //Get the correct data for the filter to filter by input or input group
@@ -1094,18 +1117,6 @@ class FilterMaker {
 
         //correct input display value to actual data values
         if (NMaker.displayValues[prop] && lowerInputValue == NMaker.displayValues[prop].displayValue) lowerInputValue = NMaker.displayValues[prop].value;
-
-        //record in memory
-        sessionStorage.setItem("filter-memory-selection", prop);
-        sessionStorage.setItem("filter-memory-modifier", filterOption);
-        sessionStorage.setItem("filter-memory-lower-value", lowerInputValue);
-        sessionStorage.setItem("filter-memory-upper-value", upperInputValue);
-        this.attributes.memory = {
-            selection: prop,
-            option: filterOption,
-            lowerValue: lowerInputValue,
-            upperValue: upperInputValue
-        }
 
         //new filtered data to fill in empty array
         let filteredData = [];
