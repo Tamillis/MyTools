@@ -698,6 +698,9 @@ class FilterMaker {
         if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
+
+        //if using this.attributes.memory, i.e. a default is provided, pre-click search.
+        if(this.attributes.memory) NMaker.dom(this.attributes.id + "-search").click();
     }
 
     makeSubFilter(id = null) {
