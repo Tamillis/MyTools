@@ -654,12 +654,15 @@ class FilterMaker {
 
     setupMemory() {
         this.memory = {};
-        //used to enable the creation of subfilters
+
+        //ids are used to enable the creation of subfilters, so they need to be kept intrisically linked. 
+        //Clear the ids, you must clear the filters. Make a filter, make an id. Make an id, make a filter
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
         if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
             this.filterIds = storedFilterIds.split(",");
         }
+        this.filterIdsNext = this.filterIds.length;
 
         if (this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
@@ -674,7 +677,9 @@ class FilterMaker {
 
         //memory can be overriden by the user to provide a starting default selection, modifier and input prompts
         if (this.attributes.memory) {
-            this.filterIds = [this.attributes.id + "0"];
+            this.filterIdsNext = 0;
+            this.filterIds = [this.attributes.id + this.filterIdsNext++];
+            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
             this.memory = {};
             this.memory[this.filterIds[0]] = this.attributes.memory;
         }
@@ -694,13 +699,17 @@ class FilterMaker {
         let btnControls = this.makeBtnControlsContainer();
         container.appendChild(btnControls);
 
+        this.makeSubFilters();
+
+        //if using this.attributes.memory, i.e. a default is provided, pre-click search.
+        if (this.attributes.memory) NMaker.dom(this.attributes.id + "-search").click();
+    }
+
+    makeSubFilters() {
         //create subfilters if memory calls for them && subfilters are in use
         if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
-
-        //if using this.attributes.memory, i.e. a default is provided, pre-click search.
-        if(this.attributes.memory) NMaker.dom(this.attributes.id + "-search").click();
     }
 
     makeSubFilter(id = null) {
@@ -709,7 +718,7 @@ class FilterMaker {
 
         //if id is null, a new dynamic subfilter is being made
         if (id == null) {
-            id = this.attributes.id + this.filterIds.length;
+            id = this.attributes.id + this.filterIdsNext++;
             //push id of subfilter to filterIds
             this.filterIds.push(id);
 
@@ -721,7 +730,7 @@ class FilterMaker {
         let container = this.makeContainer(id, this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
-        if(this.attributes.useSubFilter) {
+        if (this.attributes.useSubFilter) {
             let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
                 if (this.filterIds.length == 1) return;
                 this.filterIds = this.filterIds.filter(filterId => filterId !== id);
@@ -795,10 +804,24 @@ class FilterMaker {
 
         //reset button
         let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
+            //reset data
             NMaker.resetData();
+
+            //destroy and remake filters from memory
+            for (let id of this.filterIds) NMaker.dom(id).remove();
+            
+            //reset memory
             this.setupMemory();
+
+            //create subfilters if memory calls for them && subfilters are in use
+            if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
+            //else main filter is now just a new sub filter like any other
+            else this.makeSubFilter();
+
+            //dispatch events to update table etc
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
+
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
