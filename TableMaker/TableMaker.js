@@ -721,7 +721,7 @@ class FilterMaker {
         let container = this.makeContainer(id, this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
-        if(this.useSubFilter) {
+        if(this.attributes.useSubFilter) {
             let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
                 if (this.filterIds.length == 1) return;
                 this.filterIds = this.filterIds.filter(filterId => filterId !== id);
