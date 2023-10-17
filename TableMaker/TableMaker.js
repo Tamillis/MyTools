@@ -809,7 +809,7 @@ class FilterMaker {
 
             //destroy and remake filters from memory
             for (let id of this.filterIds) NMaker.dom(id).remove();
-            
+
             //reset memory
             this.setupMemory();
 
@@ -1047,7 +1047,7 @@ class FilterMaker {
         }
 
         //basic input should have enter-to-search capability
-        input.onkeyup = ({ key }) => { if (key === "Enter") NMaker.dom(id + "-search").click() };
+        input.onkeyup = ({ key }) => { if (key === "Enter") NMaker.dom(this.attributes.id + "-search").click() };
 
         //attach input
         inputGroup.appendChild(input);
