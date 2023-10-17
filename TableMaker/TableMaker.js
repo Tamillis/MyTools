@@ -599,14 +599,14 @@ class FilterMaker {
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 label: ["input-group-text"],
                 checkbox: ["form-check-input"],
-                selectionContainer: ["pe-2"],
+                selectionContainer: ["px-2"],
                 selector: ["form-select"],
                 modifier: ["form-select"],
                 inputContainer: ["flex-grow-1"],
                 input: ["form-control"],
                 inputGroup: ["input-group"],
                 dateRange: ["input-group"],
-                buttonGroup: ["btn-group", "pe-2"]
+                buttonGroup: ["btn-group", "px-2"]
             },
             ignore: false,
             order: NMaker.sortOptions.original,
@@ -626,15 +626,6 @@ class FilterMaker {
             ...attributes
         }
 
-        if (!this.attributes.memory) {
-            this.attributes.memory = {
-                selection: sessionStorage.getItem(this.attributes.id + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
-                option: sessionStorage.getItem(this.attributes.id + "-filter-memory-modifier") ?? NMaker.filterOptions.contains,
-                upperValue: sessionStorage.getItem(this.attributes.id + "-filter-memory-upper-value") ?? "",
-                lowerValue: sessionStorage.getItem(this.attributes.id + "-filter-memory-lower-value") ?? ""
-            }
-        }
-
         this.attributes.classes = {
             ...this.attributeDefaults.classes,
             ...attributes.classes
@@ -645,17 +636,43 @@ class FilterMaker {
             ...attributes.modifier
         }
 
-        //used to enable the creation of subfilters
-        this.filterIds = sessionStorage.getItem(this.attributes.id + "-ids");
-        if (this.filterIds) this.filterIds = this.filterIds.split(",");
-        else this.filterIds = [this.attributes.id];
+        this.setupMemory();
+
+        //make filter
+        this.makeFilter();
+
+        //call updatedPageData so that filter creation can be done with cross-dependencies
+        document.addEventListener("updatedPageData", (e) => {
+            if (this.attributes.useModifier) {
+                for(let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
+            }
+            else this.makeSimpleInputGroup();
+        });
+    }
+
+    setupMemory() {
+        //this means memory can be overriden by the user to provide starting default selection, modifier and input prompts
+        if (!this.attributes.memory) {
+            this.attributes.memory = {
+                selection: sessionStorage.getItem(this.attributes.id + "0-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
+                option: sessionStorage.getItem(this.attributes.id + "0-filter-memory-modifier") ?? NMaker.filterOptions.contains,
+                upperValue: sessionStorage.getItem(this.attributes.id + "0-filter-memory-upper-value") ?? "",
+                lowerValue: sessionStorage.getItem(this.attributes.id + "0-filter-memory-lower-value") ?? ""
+            }
+        }
 
         this.memory = {};
         this.memory[this.attributes.id] = this.attributes.memory;
 
-        if (this.filterIds.length > 1) {
-            for (let i = 1; i < this.filterIds.length; i++) {
+        //used to enable the creation of subfilters
+        this.filterIds = [];
+        let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
+        if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
+            this.filterIds = storedFilterIds.split(",");
+        }
 
+        if (this.filterIds.length > 0) {
+            for (let i = 0; i < this.filterIds.length; i++) {
                 this.memory[this.filterIds[i]] = {
                     selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
                     option: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-modifier") ?? NMaker.filterOptions.contains,
@@ -664,65 +681,49 @@ class FilterMaker {
                 };
             }
         }
-
-        //make filter
-        this.makeFilter();
-
-        //call updatedPageData so that filter creation can be done with cross-dependencies
-        document.addEventListener("updatedPageData", (e) => {
-            if (this.attributes.useModifier) NMaker.dom(this.attributes.id + "-modifier").onchange();
-            else this.makeSimpleInputGroup();
-        });
     }
 
     makeFilter() {
         //make outer container
-        let container = this.makeContainer(this.attributes.id + "-outer", this.attributes.classes.container);
+        let container = this.makeContainer(this.attributes.id, this.attributes.classes.container);
         //attach container to DOM
         NMaker.dom(this.attributes.parentSelector).appendChild(container);
-
-        //make the button controls (add another filter, reset button)
-        let btnControls = this.makeBtnControlsContainer();
-        container.appendChild(btnControls);
 
         //make filter container
         let filterContainer = this.makeContainer(this.attributes.id + "-filters");
         container.appendChild(filterContainer);
 
-        //make the search button
-        let searchBtn = this.makeSearchBtn();
-        container.appendChild(searchBtn);
+        //make the button controls (add subfilter, reset button, search button)
+        let btnControls = this.makeBtnControlsContainer();
+        container.appendChild(btnControls);
 
-        //main filter is now just a sub filter like any other
-        this.makeSubFilter(this.attributes.id);
-
-        //create the initial modifier options, if in use
-        if (this.attributes.useModifier) {
-            this.makeModifierOptions();
-        }
-
-        //create subfilters if memory calls for them
-        if (this.filterIds.length > 1) for (let i = 1; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
+        //create subfilters if memory calls for them && subfilters are in use
+        if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
+        //else main filter is now just a new sub filter like any other
+        else this.makeSubFilter();
     }
 
     makeSubFilter(id = null) {
         //a sub filter has only its own selection section and input section (no search box, reset btn, etc)
-
         //the subfilter has its own ID and uses that to piggy back on all the other filter maker functions
+
+        //if id is null, a new dynamic subfilter is being made
         if (id == null) {
             id = this.attributes.id + this.filterIds.length;
             //push id of subfilter to filterIds
             this.filterIds.push(id);
+
+            //start setting up new memory entry
             this.memory[id] = {};
         }
 
-        //make outer container
+        //make subfilter container
         let container = this.makeContainer(id, this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
         let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
-            if(this.filterIds.length == 1) return;
-            this.filterIds = this.filterIds.filter(fid => fid !== id);
+            if (this.filterIds.length == 1) return;
+            this.filterIds = this.filterIds.filter(filterId => filterId !== id);
             NMaker.dom(id).remove();
         }, this.attributes.classes.button);
         container.appendChild(removeBtn);
@@ -798,6 +799,10 @@ class FilterMaker {
         }, this.attributes.classes.button)
         btnControlsContainer.appendChild(resetBtn);
 
+        //make the search button
+        let searchBtn = this.makeSearchBtn();
+        btnControlsContainer.appendChild(searchBtn);
+
         return btnControlsContainer;
     }
 
@@ -806,7 +811,7 @@ class FilterMaker {
             //reset data to be without filters
             NMaker.resetData();
 
-            //make the filter stack
+            //remake the filter memory
             this.memory = {};
             for (let filterId of this.filterIds) {
                 let selection = NMaker.dom(filterId + "-selector").value;
@@ -999,7 +1004,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = JSON.parse(this.memory[id].lowerValue);
+                input.checked = JSON.parse(this.memory[id].lowerValue ?? false);
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "object":
