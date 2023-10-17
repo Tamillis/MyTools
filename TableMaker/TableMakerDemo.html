@@ -97,8 +97,7 @@
 
         let visible = false;
         let paginator;
-        let filter1;
-        let filter2;
+        let filter;
         let table;
 
         function showRaw(el) {
@@ -123,7 +122,7 @@
 
         function makeTailored() {
             removeOld(paginator);
-            removeOld(filter1);
+            removeOld(filter);
             removeOld(table);
             delete NMaker;
 
@@ -132,7 +131,7 @@
 
         function makeDefaults() {
             removeOld(paginator);
-            removeOld(filter1);
+            removeOld(filter);
             removeOld(table);
             delete NMaker;
 
@@ -225,7 +224,7 @@
             NMaker.init(data);
             paginator = new PaginatorMaker();
             table = new TableMaker();
-            filter1 = new FilterMaker();
+            filter = new FilterMaker();
         }
     </script>
 </body>

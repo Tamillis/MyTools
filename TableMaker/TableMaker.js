@@ -662,7 +662,7 @@ class FilterMaker {
         if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
             this.filterIds = storedFilterIds.split(",");
         }
-        this.filterIdsNext = this.filterIds.length;
+        this.filterIdsNext = this.filterIds.length > 0 ? ++this.filterIds[this.filterIds.length-1].split("-")[1] : 0;
 
         if (this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
@@ -678,7 +678,7 @@ class FilterMaker {
         //memory can be overriden by the user to provide a starting default selection, modifier and input prompts
         if (this.attributes.memory) {
             this.filterIdsNext = 0;
-            this.filterIds = [this.attributes.id + this.filterIdsNext++];
+            this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
             sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
             this.memory = {};
             this.memory[this.filterIds[0]] = this.attributes.memory;
@@ -718,7 +718,8 @@ class FilterMaker {
 
         //if id is null, a new dynamic subfilter is being made
         if (id == null) {
-            id = this.attributes.id + this.filterIdsNext++;
+            id = this.attributes.id + "-" + this.filterIdsNext++;
+
             //push id of subfilter to filterIds
             this.filterIds.push(id);
 
