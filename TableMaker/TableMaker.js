@@ -1053,7 +1053,7 @@ class FilterMaker {
             // update table
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
-        }, this.attributes.classes.button);
+        }, this.attributes.classes.button, "Hide or Show selected column in the table");
 
         return toggleColBtn;
     }
