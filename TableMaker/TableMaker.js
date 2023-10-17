@@ -718,12 +718,14 @@ class FilterMaker {
         let container = this.makeContainer(id, this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
-        let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
-            if (this.filterIds.length == 1) return;
-            this.filterIds = this.filterIds.filter(filterId => filterId !== id);
-            NMaker.dom(id).remove();
-        }, this.attributes.classes.button, "Remove filter");
-        container.appendChild(removeBtn);
+        if(this.useSubFilter) {
+            let removeBtn = NMaker.makeBtn(id + "-remove-btn", "-", () => {
+                if (this.filterIds.length == 1) return;
+                this.filterIds = this.filterIds.filter(filterId => filterId !== id);
+                NMaker.dom(id).remove();
+            }, this.attributes.classes.button, "Remove filter");
+            container.appendChild(removeBtn);
+        }
 
         //make selection container (selector, & modifier if in use)
         let selection = this.makeSelectionContainer(id);
