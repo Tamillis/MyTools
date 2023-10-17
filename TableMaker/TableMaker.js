@@ -129,12 +129,13 @@ class NMaker {
         return el;
     }
 
-    static makeBtn(id, name, fn, classes = null) {
+    static makeBtn(id, name, fn, classes = null, tooltip = null) {
         let btn = document.createElement("button");
         btn.id = id;
         btn.innerText = name;
         btn.onclick = fn;
         if (classes) NMaker.addStylesToElement(btn, classes);
+        if (tooltip) btn.title = tooltip;
         return btn;
     }
 
@@ -596,6 +597,7 @@ class FilterMaker {
             parentSelector: "body",
             classes: {
                 container: ["mb-2", "d-flex", "g-2"],
+                filterContainer: ["flex-grow-1"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 label: ["input-group-text"],
                 checkbox: ["form-check-input"],
@@ -644,26 +646,14 @@ class FilterMaker {
         //call updatedPageData so that filter creation can be done with cross-dependencies
         document.addEventListener("updatedPageData", (e) => {
             if (this.attributes.useModifier) {
-                for(let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
+                for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
             }
             else this.makeSimpleInputGroup();
         });
     }
 
     setupMemory() {
-        //this means memory can be overriden by the user to provide starting default selection, modifier and input prompts
-        if (!this.attributes.memory) {
-            this.attributes.memory = {
-                selection: sessionStorage.getItem(this.attributes.id + "0-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
-                option: sessionStorage.getItem(this.attributes.id + "0-filter-memory-modifier") ?? NMaker.filterOptions.contains,
-                upperValue: sessionStorage.getItem(this.attributes.id + "0-filter-memory-upper-value") ?? "",
-                lowerValue: sessionStorage.getItem(this.attributes.id + "0-filter-memory-lower-value") ?? ""
-            }
-        }
-
         this.memory = {};
-        this.memory[this.attributes.id] = this.attributes.memory;
-
         //used to enable the creation of subfilters
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
@@ -681,6 +671,13 @@ class FilterMaker {
                 };
             }
         }
+
+        //memory can be overriden by the user to provide a starting default selection, modifier and input prompts
+        if (this.attributes.memory) {
+            this.filterIds = [this.attributes.id + "0"];
+            this.memory = {};
+            this.memory[this.filterIds[0]] = this.attributes.memory;
+        }
     }
 
     makeFilter() {
@@ -690,7 +687,7 @@ class FilterMaker {
         NMaker.dom(this.attributes.parentSelector).appendChild(container);
 
         //make filter container
-        let filterContainer = this.makeContainer(this.attributes.id + "-filters");
+        let filterContainer = this.makeContainer(this.attributes.id + "-filters", this.attributes.classes.filterContainer);
         container.appendChild(filterContainer);
 
         //make the button controls (add subfilter, reset button, search button)
@@ -725,7 +722,7 @@ class FilterMaker {
             if (this.filterIds.length == 1) return;
             this.filterIds = this.filterIds.filter(filterId => filterId !== id);
             NMaker.dom(id).remove();
-        }, this.attributes.classes.button);
+        }, this.attributes.classes.button, "Remove filter");
         container.appendChild(removeBtn);
 
         //make selection container (selector, & modifier if in use)
@@ -787,16 +784,17 @@ class FilterMaker {
 
         if (this.attributes.useSubFilter) {
             //add filter button
-            let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => this.makeSubFilter(), this.attributes.classes.button);
+            let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => this.makeSubFilter(), this.attributes.classes.button, "Add filter");
             btnControlsContainer.appendChild(addBtn);
         }
 
         //reset button
         let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
             NMaker.resetData();
+            this.setupMemory();
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
-        }, this.attributes.classes.button)
+        }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
         //make the search button
@@ -854,7 +852,7 @@ class FilterMaker {
             //dispatch events to update filter and table
             document.dispatchEvent(NMaker.updatedData);
             document.dispatchEvent(NMaker.updatedPageData);
-        }, this.attributes.classes.button);
+        }, this.attributes.classes.button, "Search in the table");
     }
 
     makeModifier(id) {
