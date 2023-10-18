@@ -519,6 +519,7 @@ class PaginatorMaker {
         });
 
         document.dispatchEvent(NMaker.updatedData);
+        document.dispatchEvent(NMaker.updatedPageData);
     }
 
     /// produce a new array to prevent mutation
@@ -916,7 +917,7 @@ class FilterMaker {
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
         selector.onchange = () => {
-            NMaker.dom(id + "-col-filter").innerText = NMaker.hiddenHeadings.includes(selector.value) ? "Show" : "Hide";
+            if(this.attributes.useColumnFilter) NMaker.dom(id + "-col-filter").innerText = NMaker.hiddenHeadings.includes(selector.value) ? "Show" : "Hide";
             if (this.attributes.useModifier) this.makeModifierOptions(id);
             else this.makeSimpleInputGroup(id);
         }

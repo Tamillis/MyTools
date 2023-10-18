@@ -28,7 +28,6 @@ The styling defaults make plentiful use of Bootstrap, but it is not required (al
     - [Modifier](#modifier)
     - [Input](#input)
     - [API](#api-1)
-  - [MultiFilter](#multifilter)
 
 ### Common Attributes
 Attributes don't have to be provided, they fall back on defaults.
@@ -72,6 +71,8 @@ The tableMaker functions simply: through data provided to the `attributes` input
 | `hide` | an array of strings for the columns that you don't want to be in the table |
 | `link` | an array of objects of two properties: `name` that denotes the column to be effected and `text` which denotes the text of the link. The actual link's `href` is the data of the column so that ought to be valid href data  |
 | `conditionalClasses` | An object where each property is a header of your data, the value of which is an object with `condition` `target` and optional `classesIf` and `classesNot` properties used to tell TableMaker how to conditionally apply classes. The `condition` replaces the headings it finds in its string, with the data of the row for that heading. |
+| `displayHeadings` | How data property names should be displayed vs how they are in data. See below or demo for example. |
+| `displayValues` | How data values should be displayed vs how they are in data. See below or demo for example. |
 
 Classes defaults: 
 
@@ -97,6 +98,30 @@ conditionalClasses : {
         condition : "balance < 2000",
         target : "cell",
         classesIf : ["text-decoration-underline"]
+    }
+}
+```
+
+Display heading and value use:
+
+```js
+{
+    displayHeadings : {
+        phone : "Phone №"
+    },
+    displayValues : {
+        address: {
+            value: null,
+            displayValue: "No address"
+        },
+        gender: {
+            value: null,
+            displayValue: "None specified"
+        },
+        phone: {
+            value: null,
+            displayValue: "No phone"
+        }
     }
 }
 ```
@@ -146,9 +171,10 @@ In what way the presented data will be filtered, depending on the modifier. If n
 | `ignore` | Headings to not include in the filter. |
 | `order` | How to order the headings selection, defaults to the data's original order. Other NMakerSortOptions accepted. |
 | `useModifier` | `true` or `false` |
-| `modifier` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `modifierOptions`. See below |
+| `modifiers` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `filterOptions`. See below |
 | `useColumnFilter` | `true` or `false`, enables the showing and hiding of hidden columns of the table |
 | `memory` | Object with `selection` `modifier` `upperValue` and `lowerValue` properties. Defaults to being filled from `sessionStorage`, and holds the prior search parameters. Set this attribute to set starting search terms. All non-range inputs just use the `lowerValue` property |
+|`useSubFilter` | `true` or `false`, enables the add and remove buttons meaning multiple filters can be added. |
 
 
 ``` js
@@ -170,7 +196,7 @@ classes: {
 
 ```js
 // modifier options pseudo-enum
-NMaker.modifierOptions = Object.freeze({
+NMaker.filterOptions = Object.freeze({
     equals: "=",
     greaterThan: ">",
     lessThan: "<",
@@ -181,13 +207,8 @@ NMaker.modifierOptions = Object.freeze({
     excludes: "Excludes",
     date: "Date",
     dateRange: "From -> To",
+    numberRange: "Between",
     boolean: "Boolean",
     select: "Select"
 });
 ```
-
-## MultiFilter
-The major drawback of the filter is the ability to only filter by one condition at a time. There needs to be a way to Add filters dynamically, and all their search criteria be used when clicking "search".
-
-The original filter has the `original: true` property, and before the reset button a plus button. Clicking it makes a new sub-filter, which is just the selector (modifier, if used) and input (no search or show/hide). The sub-filter has a minus button, that gets rid of that subfilter.
-- Search button is going to have to be disconnected from the input groups, and the input group changing is going to have to push to a stack of filter calls (as the search button itself can no longer hold the filter function)
