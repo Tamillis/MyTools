@@ -395,7 +395,7 @@ class TableMaker {
             //FORMAT DATA
             let content = data[key];
 
-            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value == data[key]) content = this.attributes.displayValues[key].displayValue;
+            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value.toString() == data[key].toString()) content = this.attributes.displayValues[key].displayValue;
 
             //Date
             if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
@@ -580,6 +580,14 @@ class PaginatorMaker {
 
         //attach
         NMaker.dom(this.attributes.parentSelector).appendChild(container);
+
+        //toggle paginator display if 1 / 1 pages
+        this.togglePaginator();
+    }
+
+    togglePaginator() {
+        if (this.pages == 1) NMaker.dom(this.attributes.id).hidden = true;
+        else NMaker.dom(this.attributes.id).hidden = false;
     }
 
     updateDisplay() {
@@ -822,16 +830,12 @@ class FilterMaker {
             //reset data
             NMaker.resetData();
 
-            //destroy and remake filters from memory
-            for (let id of this.filterIds) NMaker.dom(id).remove();
-
             //reset memory
             this.setupMemory();
 
-            //create subfilters if memory calls for them && subfilters are in use
-            if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
-            //else main filter is now just a new sub filter like any other
-            else this.makeSubFilter();
+            //dispatch events to update filter and table
+            document.dispatchEvent(NMaker.updatedData);
+            document.dispatchEvent(NMaker.updatedPageData);
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
