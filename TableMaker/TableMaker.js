@@ -663,7 +663,7 @@ class FilterMaker {
         if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
             this.filterIds = storedFilterIds.split(",");
         }
-        this.filterIdsNext = this.filterIds.length > 0 ? ++this.filterIds[this.filterIds.length-1].split("-")[1] : 0;
+        this.filterIdsNext = this.filterIds.length > 0 ? ++this.filterIds[this.filterIds.length - 1].split("-")[1] : 0;
 
         if (this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
@@ -711,6 +711,8 @@ class FilterMaker {
         if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
+
+        this.toggleRemoveBtns();
     }
 
     makeSubFilter(id = null) {
@@ -737,6 +739,7 @@ class FilterMaker {
                 if (this.filterIds.length == 1) return;
                 this.filterIds = this.filterIds.filter(filterId => filterId !== id);
                 NMaker.dom(id).remove();
+                this.toggleRemoveBtns();
             }, this.attributes.classes.button, "Remove filter");
             container.appendChild(removeBtn);
         }
@@ -759,7 +762,14 @@ class FilterMaker {
         if (this.attributes.useModifier) {
             this.makeModifierOptions(id);
         }
+    }
 
+    toggleRemoveBtns() {
+        //show/hide removeBtns based on filterIds length
+        for (let filter of NMaker.dom(this.attributes.id + "-filters").childNodes) {
+            if (this.filterIds.length == 1) NMaker.dom(filter.id + "-remove-btn").hidden = true;
+            else NMaker.dom(filter.id + "-remove-btn").hidden = false;
+        }
     }
 
     makeContainer(id, classes) {
@@ -800,7 +810,10 @@ class FilterMaker {
 
         if (this.attributes.useSubFilter) {
             //add filter button
-            let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => this.makeSubFilter(), this.attributes.classes.button, "Add filter");
+            let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => {
+                this.makeSubFilter();
+                this.toggleRemoveBtns();
+            }, this.attributes.classes.button, "Add filter");
             btnControlsContainer.appendChild(addBtn);
         }
 
@@ -819,11 +832,6 @@ class FilterMaker {
             if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
             //else main filter is now just a new sub filter like any other
             else this.makeSubFilter();
-
-            //dispatch events to update table etc
-            document.dispatchEvent(NMaker.updatedData);
-            document.dispatchEvent(NMaker.updatedPageData);
-
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
@@ -889,6 +897,7 @@ class FilterMaker {
         //modifier is select box
         let modifier = document.createElement("select");
         modifier.id = id + "-modifier";
+        modifier.title = "How to filter by";
         modifier.onchange = () => {
             if (modifier.value == NMaker.filterOptions.dateRange) this.makeDateRangeInputGroup(id);
             else if (modifier.value == NMaker.filterOptions.select) this.makeSelectInput(id);
@@ -903,6 +912,7 @@ class FilterMaker {
     makeSelector(id = this.attributes.id) {
         let selector = document.createElement("select");
         selector.id = id + "-selector";
+        selector.title = "What column to filter by";
         let headings = NMaker.sort(Object.values(NMaker.headings), this.attributes.order);
 
         for (let displayHeading of headings) {
@@ -917,7 +927,7 @@ class FilterMaker {
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
         selector.onchange = () => {
-            if(this.attributes.useColumnFilter) NMaker.dom(id + "-col-filter").innerText = NMaker.hiddenHeadings.includes(selector.value) ? "Show" : "Hide";
+            if (this.attributes.useColumnFilter) NMaker.dom(id + "-col-filter").innerText = NMaker.hiddenHeadings.includes(selector.value) ? "Show" : "Hide";
             if (this.attributes.useModifier) this.makeModifierOptions(id);
             else this.makeSimpleInputGroup(id);
         }
@@ -1012,6 +1022,7 @@ class FilterMaker {
         //basic input is only one input element so make that
         let input = document.createElement("input");
         input.id = id + "-input";
+        input.title = "What to filter by"
 
         switch (type) {
             case "bigint":
@@ -1088,14 +1099,14 @@ class FilterMaker {
 
     makeDateRangeInputGroup(id) {
         let dateRangePicker = NMaker.makeDateRangePicker(id + "-input-group", this.attributes.classes, this.memory[id].lowerValue, this.memory[id].upperValue);
-
+        dateRangePicker.title = "What to filter by"
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(dateRangePicker);
     }
 
     makeNumberRangeInputGroup(id) {
         let numberRangePicker = NMaker.makeNumberRangePicker(id + "-input-group", this.attributes.classes, this.memory[id].lowerValue, this.memory[id].upperValue);
-
+        numberRangePicker.title = "What to filter by"
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(numberRangePicker);
     }
@@ -1103,7 +1114,7 @@ class FilterMaker {
     makeSelectInput(id) {
         //remove old input / inputs by clearing input-group
         let inputGroup = NMaker.replaceElement(id + "-input-group", "div", this.attributes.classes.inputGroup);
-
+        inputGroup.title = "What to filter by"
         //basic input is only one input element so make that
         let input = document.createElement("select");
         input.id = id + "-input";
