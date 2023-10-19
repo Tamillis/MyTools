@@ -395,7 +395,14 @@ class TableMaker {
             //FORMAT DATA
             let content = data[key];
 
-            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value.toString() == data[key].toString()) content = this.attributes.displayValues[key].displayValue;
+            //only match null with null
+            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value === null && data[key] === null) {
+                content = this.attributes.displayValues[key].displayValue;
+            }
+            else if (this.attributes.displayValues[key] && this.attributes.displayValues[key].value !== null && this.attributes.displayValues[key].value.toString() == data[key].toString()) {
+                content = this.attributes.displayValues[key].displayValue;
+            }
+
 
             //Date
             if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
