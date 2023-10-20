@@ -782,8 +782,15 @@ class FilterMaker {
     toggleRemoveBtns() {
         //show/hide removeBtns based on filterIds length
         for (let filter of NMaker.dom(this.attributes.id + "-filters").childNodes) {
-            if (this.filterIds.length == 1) NMaker.dom(filter.id + "-remove-btn").hidden = true;
-            else NMaker.dom(filter.id + "-remove-btn").hidden = false;
+            let btn = NMaker.dom(filter.id + "-remove-btn");
+            if (this.filterIds.length == 1) {
+                btn.hidden = true;
+                btn.style.display = "none";
+            }
+            else {
+                btn.hidden = false;
+                btn.style.display = "inline-block";
+            }
         }
     }
 
