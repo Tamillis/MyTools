@@ -14,6 +14,7 @@ The objects create their corresponding HTML immediately, but calling `[component
 The styling defaults make plentiful use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS classes can be used).
 
 - [NMaker Utilities](#nmaker-utilities)
+  - [USAGE](#usage)
     - [Common Attributes](#common-attributes)
     - [Given tabular JSON](#given-tabular-json)
     - [When called (with optional options)](#when-called-with-optional-options)
@@ -28,6 +29,13 @@ The styling defaults make plentiful use of Bootstrap, but it is not required (al
     - [Modifier](#modifier)
     - [Input](#input)
     - [API](#api-1)
+
+## USAGE
+MAJOR PERFORMANCE HIT
+
+If you have a huge table, make sure you build the filter first, then the paginator, then the table.
+
+NOTE TO SELF: don't build anything until all objects are made and setup perhaps a NMaker.build() function or something like that. The build step can make sure oddities like non-presence of paginator / filter don't fuck things up.
 
 ### Common Attributes
 Attributes don't have to be provided, they fall back on defaults.
