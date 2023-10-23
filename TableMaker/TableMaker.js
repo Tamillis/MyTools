@@ -335,7 +335,7 @@ class TableMaker {
         // thead > tr > th
         for (let th of head.childNodes[0].childNodes) {
 
-            if (this.attributes.sorting.includes(th.value) || (this.attributes.sorting.includes("all") && !this.attributes.noSorting.includes(th.value))) {
+            if (this.attributes.sorting.includes(th.value) || (this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(th.value)))) {
                 //record the state of the sort button
                 if (this.attributes.sortingOrientation[th.value] == null) this.attributes.sortingOrientation[th.value] = "unset";
 
