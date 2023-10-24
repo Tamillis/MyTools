@@ -688,6 +688,11 @@ class FilterMaker {
                     upperValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-upper-value") ?? "",
                     lowerValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-lower-value") ?? ""
                 };
+
+                //boolean checking
+                if (this.memory[this.filterIds[i]].option == NMaker.filterOptions.boolean) {
+                    this.memory[this.filterIds[i]].lowerValue = this.memory[this.filterIds[i]].lowerValue !== 'false';
+                }
             }
         }
 
@@ -727,7 +732,7 @@ class FilterMaker {
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
 
-        this.toggleRemoveBtns();
+        if (this.attributes.useSubFilter) this.toggleRemoveBtns();
     }
 
     makeSubFilter(id = null) {
@@ -864,6 +869,9 @@ class FilterMaker {
         return NMaker.makeBtn(this.attributes.id + "-search", "Search", () => {
             //reset data to be without filters
             NMaker.resetData();
+
+            //clear sessionStorage
+            sessionStorage.clear();
 
             //remake the filter memory
             this.memory = {};
@@ -1062,6 +1070,7 @@ class FilterMaker {
             case "boolean":
                 input.type = "checkbox";
                 input.checked = this.memory[id].lowerValue;
+                console.log("input.checked", input.checked, "memory[id].lowervalue", this.memory[id].lowerValue);
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "object":
