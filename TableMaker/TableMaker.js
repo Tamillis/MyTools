@@ -1061,7 +1061,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = JSON.parse(this.memory[id].lowerValue ?? false);
+                input.checked = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "object":
