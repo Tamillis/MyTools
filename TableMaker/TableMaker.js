@@ -233,6 +233,13 @@ class NMaker {
         //initial hidden headings as set by attributes
         NMaker.hiddenHeadings = attributes.hide ? attributes.hide : [];
 
+        NMaker.colTypes = {...NMaker.data[0]}
+        for(let prop in NMaker.colTypes) {
+            let type = typeof NMaker.colTypes[prop];
+            if (type == 'object' && NMaker.colTypes[prop] instanceof Date) type = 'date';
+            NMaker.colTypes[prop] = type;
+        }
+
         for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);
 
         if (attributes.displayHeadings) {
