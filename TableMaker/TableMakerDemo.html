@@ -157,10 +157,9 @@
                 noSorting: ["picture", "renting"],
                 hide: ["about", "renting", "address"],
                 currency: ["balance"],
-                link: [{
-                    name: "picture",
-                    text: "See picture"
-                }],
+                link: {
+                    picture: "See picture"
+                },
                 conditionalClasses: {
                     gender: {
                         condition: "gender == 'male'",
@@ -210,16 +209,16 @@
                 },
                 useColumnFilter : true,
                 useSubFilter : true,
-                // memory: {
-                //     selection: "name",
-                //     option: NMaker.filterOptions.startsWith,
-                //     lowerValue: "a",
-                //     upperValue: ""
-                // }
+                defaultSettings: {
+                    selection: "name",
+                    option: NMaker.filterOptions.startsWith,
+                    lowerValue: "m",
+                    upperValue: ""
+                },
+                useMemory: true
             });
         }
         
-
         function makeSuiteDefaults() {
             NMaker.init(data);
             paginator = new PaginatorMaker();

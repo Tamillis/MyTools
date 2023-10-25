@@ -417,9 +417,9 @@ class TableMaker {
             }
 
             //Link
-            else if (this.attributes.link && this.attributes.link.map(l => l.name).includes(key)) {
-                let linkData = this.attributes.link.filter(l => l.name == key)[0];
-                if (linkData) content = NMaker.makeLink(linkData.text, content, this.attributes.classes.link);
+            else if (this.attributes.link && this.attributes.link.hasOwnProperty(key)) {
+                let linkData = this.attributes.link[key];
+                content = NMaker.makeLink(linkData, content, this.attributes.classes.link);
             }
             else {
                 content = document.createTextNode(content);
@@ -636,7 +636,14 @@ class FilterMaker {
                 boolean: [NMaker.filterOptions.boolean]
             },
             useColumnFilter: false,
-            useSubFilter: false
+            useSubFilter: false,
+            useMemory: false,
+            defaultSettings: {
+                selection: Object.keys(NMaker.data[0])[0],
+                option: NMaker.filterOptions.contains,
+                upperValue: "",
+                lowerValue: ""
+            }
         };
 
         this.attributes = {
@@ -654,7 +661,19 @@ class FilterMaker {
             ...attributes.modifier
         }
 
-        this.setupMemory();
+        this.attributes.defaultSettings = {
+            ...this.attributeDefaults.defaultSettings,
+            ...attributes.defaultSettings
+        }
+
+        //create memory defaults
+        this.filterIdsNext = 0;
+        this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
+        this.memory = {};
+        this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
+        
+        if(this.attributes.useMemory) this.setMemory();
+        else sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
 
         //make filter
         this.makeFilter();
@@ -668,11 +687,11 @@ class FilterMaker {
         });
     }
 
-    setupMemory() {
+    setMemory() {
         this.memory = {};
 
         //ids are used to enable the creation of subfilters, so they need to be kept intrisically linked. 
-        //Clear the ids, you must clear the filters. Make a filter, make an id. Make an id, make a filter
+        //Clear the ids, you must clear the filters. Make a filter, make an id. And vice-versa
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
         if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
@@ -695,14 +714,12 @@ class FilterMaker {
                 }
             }
         }
-
-        //memory can be overriden by the user to provide a starting default selection, modifier and input prompts
-        if (this.attributes.memory) {
-            this.filterIdsNext = 0;
+        else {
+            //if no memory, use defaultSettings
             this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
             sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
             this.memory = {};
-            this.memory[this.filterIds[0]] = this.attributes.memory;
+            this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
         }
     }
 
@@ -722,8 +739,8 @@ class FilterMaker {
 
         this.makeSubFilters();
 
-        //if using this.attributes.memory, i.e. a default is provided, pre-click search.
-        if (this.attributes.memory) NMaker.dom(this.attributes.id + "-search").click();
+        //if using memory pre-click search.
+        if (this.attributes.useMemory) NMaker.dom(this.attributes.id + "-search").click();
     }
 
     makeSubFilters() {
@@ -850,7 +867,7 @@ class FilterMaker {
             NMaker.resetData();
 
             //reset memory
-            this.setupMemory();
+            this.setMemory();
 
             //dispatch events to update filter and table
             document.dispatchEvent(NMaker.updatedData);
