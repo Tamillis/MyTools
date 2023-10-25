@@ -139,7 +139,25 @@
         }
 
         function makeSuiteTailored() {
-            NMaker.init(data);
+            NMaker.init(data, {
+                displayHeadings : {
+                    phone : "Phone №"
+                },
+                displayValues : {
+                    address: {
+                        value: null,
+                        displayValue: "No address"
+                    },
+                    gender: {
+                        value: null,
+                        displayValue: "None specified"
+                    },
+                    phone: {
+                        value: null,
+                        displayValue: "No phone"
+                    }
+                }
+            });
 
             paginator = new PaginatorMaker({
                 id: "newPaginator",
@@ -163,36 +181,24 @@
                 conditionalClasses: {
                     gender: {
                         condition: "gender == 'male'",
-                        target: "row",
-                        classesIf: ["table-info"],
-                        classesNot: ["table-danger"]
-                    },
-                    balance: {
-                        condition: "balance < 3000 && renting == true",
                         target: "cell",
-                        classesIf: ["text-decoration-underline"]
+                        classesIf: ["text-info"],
+                        classesNot: ["text-danger"]
                     },
+                    balance: [{
+                        condition: "balance < 3000",
+                        target: "row",
+                        classesIf: ["table-warning"]
+                    },
+                    {
+                        condition: "balance < 3000 && renting == true",
+                        target: "row",
+                        classesIf: ["table-danger"]
+                    }],
                     picture: {
                         condition: "picture == ''",
                         target: "link",
                         classesIf: ["disabled"]
-                    }
-                },
-                displayHeadings : {
-                    phone : "Phone №"
-                },
-                displayValues : {
-                    address: {
-                        value: null,
-                        displayValue: "No address"
-                    },
-                    gender: {
-                        value: null,
-                        displayValue: "None specified"
-                    },
-                    phone: {
-                        value: null,
-                        displayValue: "No phone"
                     }
                 }
             });

@@ -5,6 +5,7 @@ class NMaker {
     static filteredData = [];
     static headings = [];
     static hiddenHeadings = [];
+    static displayHeadings = {};
     static displayValues = {};
     static searchHistory = "";
 
@@ -222,12 +223,24 @@ class NMaker {
         NMaker.dom("filter-search-history") ? NMaker.dom("filter-search-history").innerText = "" : null;
     }
 
-    static init(data) {
+    static init(data, attributes = {}) {
         if (!NMaker.IsCompatible(data)) throw new Error("No or invalid JSON provided");
         NMaker.filteredData = [...data];
         NMaker.pagedData = [...data];
         NMaker.data = Object.freeze(data);
-        for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);    //to be later changed to displayName
+        for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);
+        
+        if (attributes.displayHeadings) {
+            for (let heading of Object.keys(attributes.displayHeadings)) {
+                NMaker.headings[heading] = attributes.displayHeadings[heading];
+            }
+        }
+
+        if (attributes.displayValues) {
+            for (let displayValue in attributes.displayValues) {
+                NMaker.displayValues[displayValue] = attributes.displayValues[displayValue];
+            }
+        }
     }
 }
 
@@ -244,8 +257,6 @@ class TableMaker {
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
-            displayHeadings: false,
-            displayValues: false,
             conditionalClasses: false,
             parentSelector: "body",
             sorting: false,
@@ -271,18 +282,8 @@ class TableMaker {
         }
 
         NMaker.table = this;
+        //initial hidden headings as set by attributes
         NMaker.hiddenHeadings = this.attributes.hide ? this.attributes.hide : [];
-        if (this.attributes.displayHeadings) {
-            for (let heading of Object.keys(this.attributes.displayHeadings)) {
-                NMaker.headings[heading] = this.attributes.displayHeadings[heading];
-            }
-        }
-
-        if (this.attributes.displayValues) {
-            for (let displayValue in this.attributes.displayValues) {
-                NMaker.displayValues[displayValue] = this.attributes.displayValues[displayValue];
-            }
-        }
 
         document.addEventListener("updatedPageData", (e) => {
             this.data = NMaker.pagedData;
@@ -396,11 +397,11 @@ class TableMaker {
             let content = data[key];
 
             //only match null with null
-            if (this.attributes.displayValues.hasOwnProperty(key) && this.attributes.displayValues[key].value === null && data[key] === null) {
-                content = this.attributes.displayValues[key].displayValue;
+            if (NMaker.displayValues.hasOwnProperty(key) && NMaker.displayValues[key].value === null && data[key] === null) {
+                content = NMaker.displayValues[key].displayValue;
             }
-            else if (this.attributes.displayValues[key] && this.attributes.displayValues[key].value !== null && this.attributes.displayValues[key].value.toString() == data[key].toString()) {
-                content = this.attributes.displayValues[key].displayValue;
+            else if (NMaker.displayValues[key] && NMaker.displayValues[key].value !== null && NMaker.displayValues[key].value.toString() == data[key].toString()) {
+                content = NMaker.displayValues[key].displayValue;
             }
 
 
@@ -431,24 +432,31 @@ class TableMaker {
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             // TODO Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
             if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
-                let cc = { ...this.attributes.conditionalClasses[key] };
-
-                //Replace any prop in the condition with the value of that prop
-                for (let prop in data) {
-                    cc.condition = cc.condition.replace(prop + ' ', JSON.stringify(data[prop]));
+                if(Array.isArray(this.attributes.conditionalClasses[key])) {
+                    for (let cc of this.attributes.conditionalClasses[key]) {
+                        this.addConditionalClass(data, tr, td, {...cc});
+                    }
                 }
-
-                if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
-                    this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
-                }
-                else if (cc.classesNot) {
-                    this.addStylesToTarget(cc.target, tr, td, cc.classesNot);
-                }
+                else this.addConditionalClass(data, tr, td, { ...this.attributes.conditionalClasses[key] });
             }
 
             if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
 
             tr.appendChild(td);
+        }
+    }
+
+    addConditionalClass(data, tr, td, cc) {
+        //Replace any prop in the condition with the value of that prop
+        for (let prop in data) {
+            cc.condition = cc.condition.replace(prop + ' ', JSON.stringify(data[prop]));
+        }
+
+        if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
+            this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
+        }
+        else if (cc.classesNot) {
+            this.addStylesToTarget(cc.target, tr, td, cc.classesNot);
         }
     }
 
@@ -1087,7 +1095,6 @@ class FilterMaker {
             case "boolean":
                 input.type = "checkbox";
                 input.checked = this.memory[id].lowerValue;
-                console.log("input.checked", input.checked, "memory[id].lowervalue", this.memory[id].lowerValue);
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "object":
