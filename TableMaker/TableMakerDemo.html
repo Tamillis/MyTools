@@ -156,7 +156,8 @@
                         value: null,
                         displayValue: "No phone"
                     }
-                }
+                },
+                hide: ["about", "renting", "address"]
             });
 
             paginator = new PaginatorMaker({
@@ -173,7 +174,6 @@
                 //sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
                 sorting: ["all"],
                 noSorting: ["picture", "renting"],
-                hide: ["about", "renting", "address"],
                 currency: ["balance"],
                 link: {
                     picture: "See picture"
@@ -223,6 +223,8 @@
                 },
                 useMemory: true
             });
+
+            NMaker.build();
         }
         
         function makeSuiteDefaults() {

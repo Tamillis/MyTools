@@ -8,6 +8,7 @@ class NMaker {
     static displayHeadings = {};
     static displayValues = {};
     static searchHistory = "";
+    static initialBuild = 1;
 
     static filterOptions = Object.freeze({
         equals: "=",
@@ -228,8 +229,12 @@ class NMaker {
         NMaker.filteredData = [...data];
         NMaker.pagedData = [...data];
         NMaker.data = Object.freeze(data);
+
+        //initial hidden headings as set by attributes
+        NMaker.hiddenHeadings = attributes.hide ? attributes.hide : [];
+
         for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);
-        
+
         if (attributes.displayHeadings) {
             for (let heading of Object.keys(attributes.displayHeadings)) {
                 NMaker.headings[heading] = attributes.displayHeadings[heading];
@@ -241,6 +246,39 @@ class NMaker {
                 NMaker.displayValues[displayValue] = attributes.displayValues[displayValue];
             }
         }
+    }
+
+    static build() {
+        //build in ideal build order automatically, and do what is necessary if bits are missing?
+
+        // //PAGINATOR
+        // document.addEventListener("updatedData", (e) => {
+        //     this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
+        //     this.page = 1;
+        //     NMaker.pagedData = this.getPagedData();
+        //     NMaker.paginator.makePaginator();
+        // });
+
+        // //TABLE
+        // document.addEventListener("updatedPageData", (e) => {
+        //     this.data = NMaker.pagedData;
+        //     NMaker.table.makeTable();
+        // });
+
+        // //FILTER
+        // //call updatedPageData so that filter creation can be done with cross-dependencies
+        // document.addEventListener("updatedPageData", (e) => {
+        //     if (this.attributes.useModifier) {
+        //         for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
+        //     }
+        //     else this.makeSimpleInputGroup();
+        // });
+
+        document.dispatchEvent(NMaker.updatedData);
+        document.dispatchEvent(NMaker.updatedPageData);
+
+        //if using memory pre-click search.
+        if (NMaker.initialBuild++ == 1 && NMaker.filter && NMaker.filter.attributes.useMemory) NMaker.dom(NMaker.filter.attributes.id + "-search").click();
     }
 }
 
@@ -263,7 +301,6 @@ class TableMaker {
             noSorting: false,
             sortingOrientation: {},
             currency: false,
-            hide: false,
             link: false
         };
 
@@ -282,15 +319,11 @@ class TableMaker {
         }
 
         NMaker.table = this;
-        //initial hidden headings as set by attributes
-        NMaker.hiddenHeadings = this.attributes.hide ? this.attributes.hide : [];
 
         document.addEventListener("updatedPageData", (e) => {
-            this.data = NMaker.pagedData;
+            NMaker.table.data = NMaker.pagedData;
             NMaker.table.makeTable();
         });
-
-        document.dispatchEvent(NMaker.updatedPageData);
     }
 
     addSortBtn(column) {
@@ -307,7 +340,11 @@ class TableMaker {
             }
 
             //sort the exposed data based on its type
-            NMaker.filteredData = NMaker.filteredData.slice().sort((prevRow, currRow) => {
+            let data;
+            if(NMaker.paginator) data = NMaker.filteredData;
+            else data = NMaker.pagedData;
+
+            data = data.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
                 if (typeof prevRow[column] == typeof currRow[column]) {
                     switch (typeof currRow[column]) {
@@ -327,8 +364,11 @@ class TableMaker {
 
                 return NMaker.compare(sortOption, prevRow[column], currRow[column]);
             });
-            document.dispatchEvent(NMaker.updatedData);
-            document.dispatchEvent(NMaker.updatedPageData);
+            
+            if(NMaker.paginator) NMaker.filteredData = data;
+            else NMaker.pagedData = data;
+
+            NMaker.build();
         }, this.attributes.classes.button);
     }
 
@@ -432,9 +472,9 @@ class TableMaker {
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             // TODO Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
             if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
-                if(Array.isArray(this.attributes.conditionalClasses[key])) {
+                if (Array.isArray(this.attributes.conditionalClasses[key])) {
                     for (let cc of this.attributes.conditionalClasses[key]) {
-                        this.addConditionalClass(data, tr, td, {...cc});
+                        this.addConditionalClass(data, tr, td, { ...cc });
                     }
                 }
                 else this.addConditionalClass(data, tr, td, { ...this.attributes.conditionalClasses[key] });
@@ -532,9 +572,6 @@ class PaginatorMaker {
             NMaker.pagedData = this.getPagedData();
             NMaker.paginator.makePaginator();
         });
-
-        document.dispatchEvent(NMaker.updatedData);
-        document.dispatchEvent(NMaker.updatedPageData);
     }
 
     /// produce a new array to prevent mutation
@@ -679,20 +716,23 @@ class FilterMaker {
         this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
         this.memory = {};
         this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
-        
-        if(this.attributes.useMemory) this.setMemory();
+
+        if (this.attributes.useMemory) this.setMemory();
         else sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
 
         //make filter
-        this.makeFilter();
+        //this.makeFilter();
 
         //call updatedPageData so that filter creation can be done with cross-dependencies
         document.addEventListener("updatedPageData", (e) => {
-            if (this.attributes.useModifier) {
-                for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
-            }
-            else this.makeSimpleInputGroup();
+            // if (this.attributes.useModifier) {
+            //     for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
+            // }
+            // else this.makeSimpleInputGroup();
+            this.makeFilter();
         });
+
+        NMaker.filter = this;
     }
 
     setMemory() {
@@ -733,12 +773,12 @@ class FilterMaker {
 
     makeFilter() {
         //make outer container
-        let container = this.makeContainer(this.attributes.id, this.attributes.classes.container);
+        let container = NMaker.replaceElement(this.attributes.id, "div", this.attributes.classes.container);
         //attach container to DOM
         NMaker.dom(this.attributes.parentSelector).appendChild(container);
 
         //make filter container
-        let filterContainer = this.makeContainer(this.attributes.id + "-filters", this.attributes.classes.filterContainer);
+        let filterContainer = NMaker.replaceElement(this.attributes.id + "-filters", "div", this.attributes.classes.filterContainer);
         container.appendChild(filterContainer);
 
         //make the button controls (add subfilter, reset button, search button)
@@ -746,9 +786,6 @@ class FilterMaker {
         container.appendChild(btnControls);
 
         this.makeSubFilters();
-
-        //if using memory pre-click search.
-        if (this.attributes.useMemory) NMaker.dom(this.attributes.id + "-search").click();
     }
 
     makeSubFilters() {
@@ -776,7 +813,7 @@ class FilterMaker {
         }
 
         //make subfilter container
-        let container = this.makeContainer(id, this.attributes.classes.container);
+        let container = NMaker.replaceElement(id, "div", this.attributes.classes.container);
 
         //make remove button, that removes subfilter & removes that id from filterIds array 
         if (this.attributes.useSubFilter) {
@@ -794,7 +831,7 @@ class FilterMaker {
         container.appendChild(selection);
 
         //make the input container
-        let input = this.makeContainer(id + "-input-container", this.attributes.classes.inputContainer);
+        let input = NMaker.replaceElement(id + "-input-container", "div", this.attributes.classes.inputContainer);
         container.appendChild(input);
 
         //attach container to DOM
@@ -824,19 +861,12 @@ class FilterMaker {
         }
     }
 
-    makeContainer(id, classes) {
-        let container = document.createElement("div");
-        container.id = id;
-        NMaker.addStylesToElement(container, classes);
-        return container;
-    }
-
     makeSelectionContainer(id = this.attributes.id) {
         //selection container
-        let selectionContainer = this.makeContainer(id + "-selection-container", this.attributes.classes.selectionContainer);
+        let selectionContainer = NMaker.replaceElement(id + "-selection-container", "div", this.attributes.classes.selectionContainer);
 
         //selector input group
-        let selectionInputGroup = this.makeContainer(id + "-selection-group", this.attributes.classes.inputGroup);
+        let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.inputGroup);
 
         //property dropdown 'selector'
         let selector = this.makeSelector(id);
@@ -858,7 +888,7 @@ class FilterMaker {
 
     makeBtnControlsContainer() {
         //btn group container
-        let btnControlsContainer = this.makeContainer(this.attributes.id + "-btn-controls-container", this.attributes.classes.buttonGroup);
+        let btnControlsContainer = NMaker.replaceElement(this.attributes.id + "-btn-controls-container", "div", this.attributes.classes.buttonGroup);
 
         if (this.attributes.useSubFilter) {
             //add filter button
@@ -878,8 +908,7 @@ class FilterMaker {
             this.setMemory();
 
             //dispatch events to update filter and table
-            document.dispatchEvent(NMaker.updatedData);
-            document.dispatchEvent(NMaker.updatedPageData);
+            NMaker.build();
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
@@ -933,7 +962,7 @@ class FilterMaker {
 
             sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
 
-            //use the filter stack to apply a sequence of filters
+            //use the memory stack to apply a sequence of filters
             for (let filter of Object.values(this.memory)) {
                 this.filter(filter.option, filter.selection, filter.lowerValue, filter.upperValue);
             }
@@ -1141,8 +1170,7 @@ class FilterMaker {
             }
 
             // update table
-            document.dispatchEvent(NMaker.updatedData);
-            document.dispatchEvent(NMaker.updatedPageData);
+            NMaker.build();
         }, this.attributes.classes.button, "Hide or Show selected column in the table");
 
         return toggleColBtn;
