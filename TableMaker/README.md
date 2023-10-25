@@ -181,7 +181,8 @@ In what way the presented data will be filtered, depending on the modifier. If n
 | `useModifier` | `true` or `false` |
 | `modifiers` | What modification options are available where each property on the object is a data type to present those options for. The currently supported data types are `number`, `string`, `date` & `boolean`. Options, to prevent errors, are kept in ap seudo-enum on `NMaker` called `filterOptions`. See below |
 | `useColumnFilter` | `true` or `false`, enables the showing and hiding of hidden columns of the table |
-| `memory` | Object with `selection` `modifier` `upperValue` and `lowerValue` properties. Defaults to being filled from `sessionStorage`, and holds the prior search parameters. Set this attribute to set starting search terms. All non-range inputs just use the `lowerValue` property |
+| `defaultSettings` | Object with `selection` `modifier` `upperValue` and `lowerValue` properties that preload the filter with what you want it to hold initially. All non-range inputs just use the `lowerValue` property |
+| `useMemory` | `true` or `false`, if true pulls information out of sessionStorage and loads the table pre-filtered |
 |`useSubFilter` | `true` or `false`, enables the add and remove buttons meaning multiple filters can be added. |
 
 
