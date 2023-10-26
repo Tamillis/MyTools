@@ -5,9 +5,9 @@ class NMaker {
     static filteredData = [];
     static headings = [];
     static hiddenHeadings = [];
+    static showHeadings = null;
     static displayHeadings = {};
     static displayValues = {};
-    static searchHistory = "";
     static initialBuild = 1;
 
     static filterOptions = Object.freeze({
@@ -106,11 +106,17 @@ class NMaker {
     }
 
     static compare = (sortOption, a, b) => {
-        if (a == null || b == null || sortOption == NMaker.sortOptions.original) return 1;
+        if (sortOption == NMaker.sortOptions.original) return 1;
         if (sortOption == NMaker.sortOptions.numeric || sortOption == NMaker.sortOptions.date) return a - b;
         if (sortOption == NMaker.sortOptions.numericReverse || sortOption == NMaker.sortOptions.dateReverse) return b - a;
-        if (sortOption == NMaker.sortOptions.alphabetical) return a.localeCompare(b);
-        if (sortOption == NMaker.sortOptions.alphabeticalReverse) return b.localeCompare(a);
+        if (sortOption == NMaker.sortOptions.alphabetical) {
+            if (a === null) return -1;
+            else return a.localeCompare(b);
+        }
+        if (sortOption == NMaker.sortOptions.alphabeticalReverse) {
+            if (b === null) return 1;
+            else return b.localeCompare(a);
+        }
         return 1;
     };
 
@@ -220,7 +226,6 @@ class NMaker {
     static resetData() {
         NMaker.filteredData = NMaker.data;
         NMaker.pagedData = NMaker.data;
-        NMaker.searchHistory = "";
         NMaker.dom("filter-search-history") ? NMaker.dom("filter-search-history").innerText = "" : null;
     }
 
@@ -232,13 +237,23 @@ class NMaker {
 
         //initial hidden headings as set by attributes
         NMaker.hiddenHeadings = attributes.hide ? attributes.hide : [];
+        //if using hide "all" and show attribute, calculate the hiddenHeadings
+        if(NMaker.hiddenHeadings.includes("all") && attributes.show) {
+            NMaker.hiddenHeadings = [];
+            for(let heading in NMaker.data[0]) {
+                if(attributes.show.includes(heading)) continue;
+                else NMaker.hiddenHeadings.push(heading);
+            }
+        }
 
-        NMaker.colTypes = {...NMaker.data[0]}
-        for(let prop in NMaker.colTypes) {
+        //generate initial coltypes from first row of data, accepting attribute overrides after
+        NMaker.colTypes = { ...NMaker.data[0] }
+        for (let prop in NMaker.colTypes) {
             let type = typeof NMaker.colTypes[prop];
             if (type == 'object' && NMaker.colTypes[prop] instanceof Date) type = 'date';
             NMaker.colTypes[prop] = type;
         }
+        NMaker.colTypes = { ...NMaker.colTypes, ...attributes.colTypes }
 
         for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);
 
@@ -348,31 +363,29 @@ class TableMaker {
 
             //sort the exposed data based on its type
             let data;
-            if(NMaker.paginator) data = NMaker.filteredData;
+            if (NMaker.paginator) data = NMaker.filteredData;
             else data = NMaker.pagedData;
 
             data = data.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
-                if (typeof prevRow[column] == typeof currRow[column]) {
-                    switch (typeof currRow[column]) {
-                        case "number":
-                            sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
-                            break;
-                        case "string":
-                            sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
-                            break;
-                        case "object":
-                            if (currRow[column] instanceof Date) sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
-                            break;
-                        default:
-                            sortOption = NMaker.sortOptions.alphabetical;
-                    }
+                switch (NMaker.colTypes[column]) {
+                    case "number":
+                        sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                        break;
+                    case "string":
+                        sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
+                        break;
+                    case "date":
+                        sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
+                        break;
+                    default:
+                        sortOption = NMaker.sortOptions.alphabetical;
                 }
 
                 return NMaker.compare(sortOption, prevRow[column], currRow[column]);
             });
-            
-            if(NMaker.paginator) NMaker.filteredData = data;
+
+            if (NMaker.paginator) NMaker.filteredData = data;
             else NMaker.pagedData = data;
 
             NMaker.build();
@@ -432,6 +445,18 @@ class TableMaker {
         return tbody;
     }
 
+    getDisplayValue(dv, content, data, key) {
+        //only match null with null
+        if (dv.value === null && data[key] === null) {
+            content = dv.displayValue;
+        }
+        else if (dv.value !== null && data[key] !== null && dv.value.toString() == data[key].toString()) {
+            content = dv.displayValue;
+        }
+
+        return content;
+    }
+
     generateRow(tbody, data, classes) {
         let tr = tbody.insertRow();
 
@@ -443,14 +468,16 @@ class TableMaker {
             //FORMAT DATA
             let content = data[key];
 
-            //only match null with null
-            if (NMaker.displayValues.hasOwnProperty(key) && NMaker.displayValues[key].value === null && data[key] === null) {
-                content = NMaker.displayValues[key].displayValue;
+            //check if displayValues exist for key
+            if (NMaker.displayValues.hasOwnProperty(key)) {
+                if (Array.isArray(NMaker.displayValues[key])) {
+                    for (let dv of NMaker.displayValues[key]) {
+                        content = this.getDisplayValue(dv, content, data, key);
+                    }
+                } else {
+                    content = this.getDisplayValue(NMaker.displayValues[key], content, data, key);
+                }
             }
-            else if (NMaker.displayValues[key] && NMaker.displayValues[key].value !== null && NMaker.displayValues[key].value.toString() == data[key].toString()) {
-                content = NMaker.displayValues[key].displayValue;
-            }
-
 
             //Date
             if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
@@ -496,7 +523,9 @@ class TableMaker {
     addConditionalClass(data, tr, td, cc) {
         //Replace any prop in the condition with the value of that prop
         for (let prop in data) {
-            cc.condition = cc.condition.replace(prop + ' ', JSON.stringify(data[prop]));
+            //check for dates
+            if (data[prop] !== null && NMaker.colTypes[prop] == "date") cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
+            else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
 
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
@@ -727,9 +756,6 @@ class FilterMaker {
         if (this.attributes.useMemory) this.setMemory();
         else sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
 
-        //make filter
-        //this.makeFilter();
-
         //call updatedPageData so that filter creation can be done with cross-dependencies
         document.addEventListener("updatedPageData", (e) => {
             // if (this.attributes.useModifier) {
@@ -911,6 +937,9 @@ class FilterMaker {
             //reset data
             NMaker.resetData();
 
+            //clear sessionStorage
+            sessionStorage.clear();
+
             //reset memory
             this.setMemory();
 
@@ -926,48 +955,51 @@ class FilterMaker {
         return btnControlsContainer;
     }
 
-    makeSearchBtn() {
-        return NMaker.makeBtn(this.attributes.id + "-search", "Search", () => {
-            //reset data to be without filters
-            NMaker.resetData();
+    remakeHistory() {
+        //reset data to be without filters
+        NMaker.resetData();
 
-            //clear sessionStorage
-            sessionStorage.clear();
+        //clear sessionStorage
+        sessionStorage.clear();
 
-            //remake the filter memory
-            this.memory = {};
-            for (let filterId of this.filterIds) {
-                let selection = NMaker.dom(filterId + "-selector").value;
-                let lowerValue = NMaker.dom(filterId + "-input") == null ? "" : NMaker.dom(filterId + "-input").value;
-                let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(lowerValue);
-                let upperValue = null;
+        //remake the filter memory
+        this.memory = {};
+        for (let filterId of this.filterIds) {
+            let selection = NMaker.dom(filterId + "-selector").value;
+            let lowerValue = NMaker.dom(filterId + "-input") == null ? "" : NMaker.dom(filterId + "-input").value;
+            let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(lowerValue);
+            let upperValue = null;
 
-                if (option == NMaker.filterOptions.dateRange || option == NMaker.filterOptions.numberRange) {
-                    //inputGroup is used by the dateRange and numberRange
-                    lowerValue = NMaker.dom(filterId + "-input-group-lower").value;
-                    upperValue = NMaker.dom(filterId + "-input-group-upper").value;
-                }
-                else if (option == NMaker.filterOptions.boolean) {
-                    lowerValue = NMaker.dom(filterId + "-input").checked;
-                }
-
-                this.memory[filterId] = {
-                    option: option,
-                    selection: selection,
-                    lowerValue: lowerValue,
-                    upperValue: upperValue
-                };
-
-                this.updateFilterSearchHistory(filterId, option, lowerValue, upperValue);
-
-                //record in memory
-                sessionStorage.setItem(filterId + "-filter-memory-selection", selection);
-                sessionStorage.setItem(filterId + "-filter-memory-modifier", option);
-                sessionStorage.setItem(filterId + "-filter-memory-lower-value", lowerValue);
-                sessionStorage.setItem(filterId + "-filter-memory-upper-value", upperValue);
+            if (option == NMaker.filterOptions.dateRange || option == NMaker.filterOptions.numberRange) {
+                //inputGroup is used by the dateRange and numberRange
+                lowerValue = NMaker.dom(filterId + "-input-group-lower").value;
+                upperValue = NMaker.dom(filterId + "-input-group-upper").value;
+            }
+            else if (option == NMaker.filterOptions.boolean) {
+                lowerValue = NMaker.dom(filterId + "-input").checked;
             }
 
-            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
+            this.memory[filterId] = {
+                option: option,
+                selection: selection,
+                lowerValue: lowerValue,
+                upperValue: upperValue
+            };
+
+            //record in memory
+            sessionStorage.setItem(filterId + "-filter-memory-selection", selection);
+            sessionStorage.setItem(filterId + "-filter-memory-modifier", option);
+            sessionStorage.setItem(filterId + "-filter-memory-lower-value", lowerValue);
+            sessionStorage.setItem(filterId + "-filter-memory-upper-value", upperValue);
+        }
+
+        sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
+    }
+
+    makeSearchBtn() {
+        return NMaker.makeBtn(this.attributes.id + "-search", "Search", () => {
+            //remake history
+            this.remakeHistory();
 
             //use the memory stack to apply a sequence of filters
             for (let filter of Object.values(this.memory)) {
@@ -1034,9 +1066,9 @@ class FilterMaker {
         }
 
         //then add options according to selected data type
-        let value = NMaker.data[0][NMaker.dom(id + "-selector").value];
+        let type = NMaker.colTypes[NMaker.dom(id + "-selector").value];
 
-        switch (typeof value) {
+        switch (type) {
             case "bigint":
             case "number":
                 this.attachOptions(modifier, this.attributes.modifiers.number, this.memory[id].option);
@@ -1048,7 +1080,7 @@ class FilterMaker {
                 this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
                 break;
             case "object":
-                if (value instanceof Date) {
+                if (type instanceof Date) {
                     this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
                 }
                 else console.error("Invalid object value found");
@@ -1100,7 +1132,7 @@ class FilterMaker {
     }
 
     makeSimpleInputGroup(id) {
-        let type = typeof NMaker.data[0][NMaker.dom(id + "-selector").value];
+        let type = NMaker.colTypes[NMaker.dom(id + "-selector").value];
         let value = NMaker.data[0][NMaker.dom(id + "-selector").value];
 
         //make / remake input group and therefore inputs
@@ -1176,6 +1208,9 @@ class FilterMaker {
                 toggleColBtn.innerText = "Show";
             }
 
+            //remake memory to save the selected filters to prevent awkward jumping around
+            this.remakeHistory();
+
             // update table
             NMaker.build();
         }, this.attributes.classes.button, "Hide or Show selected column in the table");
@@ -1228,15 +1263,6 @@ class FilterMaker {
 
         //append input group to input container
         NMaker.dom(id + "-input-container").appendChild(inputGroup);
-    }
-
-    updateFilterSearchHistory(id, filterOption, lowerValue, upperValue = null) {
-        let selector = NMaker.dom(id + "-selector");
-        NMaker.searchHistory += `, ${selector.options[selector.selectedIndex].text} ${filterOption} ${lowerValue}`;
-        if (upperValue) NMaker.searchHistory += ` + ${upperValue}`;
-        if (NMaker.searchHistory[0] == ",") NMaker.searchHistory = NMaker.searchHistory.slice(2);
-        let searchHistory = NMaker.dom("filter-search-history");
-        if (searchHistory) searchHistory.innerText = NMaker.searchHistory;
     }
 
     filter(filterOption, col, lowerValue, upperValue = null) {

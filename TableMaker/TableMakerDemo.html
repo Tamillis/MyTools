@@ -63,13 +63,13 @@
     <div class="row">
         <div id="paginator-container" class="col-2"></div>
         <div id="filter-container" class="col-10"></div>
-        <p>Showing: <span id="filter-search-history"></span></p>
         <div id="table-container" class="col-12"></div>
     </div>
 
     <script defer>
         //courtesy https://stackoverflow.com/questions/27012854/how-to-change-iso-date-string-to-date-object
         function parseISOString(s) {
+            if (s === null) return s;
             var b = s.split(/\D+/);
             return new Date(Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]));
         }
@@ -140,24 +140,49 @@
 
         function makeSuiteTailored() {
             NMaker.init(data, {
-                displayHeadings : {
-                    phone : "Phone №"
+                displayHeadings: {
+                    phone: "Phone №"
                 },
-                displayValues : {
+                displayValues: {
                     address: {
                         value: null,
                         displayValue: "No address"
-                    },
+                    }
+                    ,
                     gender: {
                         value: null,
-                        displayValue: "None specified"
-                    },
+                        displayValue: "N/A"
+                    }
+                    ,
                     phone: {
                         value: null,
                         displayValue: "No phone"
                     }
+                    ,
+                    renting: [
+                        {
+                            value: true,
+                            displayValue: "Renting"
+                        },
+                        {
+                            value: false,
+                            displayValue: ""
+                        }
+                    ],
+                    registered: {
+                        value: null,
+                        displayValue: "No record"
+                    }
                 },
-                hide: ["about", "renting", "address"]
+                colTypes: {
+                    gender: "string",
+                    phone: "string",
+                    registered: "date",
+                    address: "string"
+                },
+                //hide: ["about", "renting", "address"]
+                hide: ["all"],
+                show: ["balance", "age", "eyeColor", "name", "gender", "address", "registered", "renting"]
             });
 
             paginator = new PaginatorMaker({
@@ -167,7 +192,7 @@
                 buttons: NMaker.paginatorOptions.cycle
             });
 
-            
+
             table = new TableMaker({
                 id: "newTable",
                 parentSelector: "#table-container",
@@ -199,22 +224,27 @@
                         condition: "picture == ''",
                         target: "link",
                         classesIf: ["disabled"]
+                    },
+                    registered: {
+                        condition: "registered !== null && registered < new Date(2013,1,1)",
+                        target: "cell",
+                        classesIf: ["table-primary"]
                     }
                 }
             });
-            
+
             filter = new FilterMaker({
                 id: "f",
                 parentSelector: "#filter-container",
                 order: NMaker.sortOptions.alphabetical,
                 ignore: ["picture", "about"],
                 useModifier: true,
-                classes : {
+                classes: {
                     checkbox: ["form-input-check", "spacer"],
                     button: ["btn", "btn-sm", "btn-outline-primary", "min-width-is-height"]
                 },
-                useColumnFilter : true,
-                useSubFilter : true,
+                useColumnFilter: true,
+                useSubFilter: true,
                 defaultSettings: {
                     selection: "name",
                     option: NMaker.filterOptions.startsWith,
@@ -226,7 +256,7 @@
 
             NMaker.build();
         }
-        
+
         function makeSuiteDefaults() {
             NMaker.init(data);
             paginator = new PaginatorMaker();

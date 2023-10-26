@@ -14,7 +14,7 @@ The objects create their corresponding HTML immediately, but calling `[component
 The styling defaults make plentiful use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS classes can be used).
 
 - [NMaker Utilities](#nmaker-utilities)
-  - [USAGE](#usage)
+    - [Data Attributes](#data-attributes)
     - [Common Attributes](#common-attributes)
     - [Given tabular JSON](#given-tabular-json)
     - [When called (with optional options)](#when-called-with-optional-options)
@@ -30,12 +30,16 @@ The styling defaults make plentiful use of Bootstrap, but it is not required (al
     - [Input](#input)
     - [API](#api-1)
 
-## USAGE
-MAJOR PERFORMANCE HIT
 
-If you have a huge table, make sure you build the filter first, then the paginator, then the table.
+### Data Attributes
+Attributes that can be attached to the Data itself through `NMaker.init()`
 
-NOTE TO SELF: don't build anything until all objects are made and setup perhaps a NMaker.build() function or something like that. The build step can make sure oddities like non-presence of paginator / filter don't fuck things up.
+| **Attribute** | **Effect** |
+| --- | --- |
+| `displayHeadings` | How data property names should be displayed vs how they are in data. See below or demo for example. |
+| `displayValues` | How data values should be displayed vs how they are in data. See below or demo for example. |
+| `hide` | an array of strings for the columns that you don't want to be in the table |
+| `show` | alternatively put `"all"` into `hide` and use this attribute to list cols you wish to show |
 
 ### Common Attributes
 Attributes don't have to be provided, they fall back on defaults.
@@ -76,11 +80,8 @@ The tableMaker functions simply: through data provided to the `attributes` input
 | --- | --- |
 | `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
 |  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
-| `hide` | an array of strings for the columns that you don't want to be in the table |
 | `link` | an array of objects of two properties: `name` that denotes the column to be effected and `text` which denotes the text of the link. The actual link's `href` is the data of the column so that ought to be valid href data  |
 | `conditionalClasses` | An object where each property is a header of your data, the value of which is an object with `condition` `target` and optional `classesIf` and `classesNot` properties used to tell TableMaker how to conditionally apply classes. The `condition` replaces the headings it finds in its string, with the data of the row for that heading. |
-| `displayHeadings` | How data property names should be displayed vs how they are in data. See below or demo for example. |
-| `displayValues` | How data values should be displayed vs how they are in data. See below or demo for example. |
 
 Classes defaults: 
 
