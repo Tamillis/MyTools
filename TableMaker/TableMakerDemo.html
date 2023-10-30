@@ -245,12 +245,23 @@
                 },
                 useColumnFilter: true,
                 useSubFilter: true,
-                defaultSettings: {
-                    selection: "name",
-                    option: NMaker.filterOptions.startsWith,
-                    lowerValue: "m",
-                    upperValue: ""
-                },
+                // defaultSettings: {
+                //     selection: "name",
+                //     option: NMaker.filterOptions.startsWith,
+                //     lowerValue: "m",
+                //     upperValue: ""
+                // },
+                defaultSettings: [{
+                    selection: "registered",
+                    option: NMaker.filterOptions.after,
+                    lowerValue: "2012-12-25",
+                    upperValue: null
+                },{
+                    selection: "balance",
+                    option: NMaker.filterOptions.greaterThan,
+                    lowerValue: 2000,
+                    upperValue: null
+                }],
                 useMemory: true
             });
 

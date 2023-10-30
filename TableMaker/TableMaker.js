@@ -223,6 +223,14 @@ class NMaker {
         return numberRangePicker;
     }
 
+    static clearStorageOfId(id) {
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+            if (sessionStorage.key(i).startsWith(id)) {
+                sessionStorage.removeItem(sessionStorage.key(i));
+            }
+        }
+    }
+
     static resetData() {
         NMaker.filteredData = NMaker.data;
         NMaker.pagedData = NMaker.data;
@@ -238,10 +246,10 @@ class NMaker {
         //initial hidden headings as set by attributes
         NMaker.hiddenHeadings = attributes.hide ? attributes.hide : [];
         //if using hide "all" and show attribute, calculate the hiddenHeadings
-        if(NMaker.hiddenHeadings.includes("all") && attributes.show) {
+        if (NMaker.hiddenHeadings.includes("all") && attributes.show) {
             NMaker.hiddenHeadings = [];
-            for(let heading in NMaker.data[0]) {
-                if(attributes.show.includes(heading)) continue;
+            for (let heading in NMaker.data[0]) {
+                if (attributes.show.includes(heading)) continue;
                 else NMaker.hiddenHeadings.push(heading);
             }
         }
@@ -742,45 +750,29 @@ class FilterMaker {
             ...attributes.modifier
         }
 
-        this.attributes.defaultSettings = {
-            ...this.attributeDefaults.defaultSettings,
-            ...attributes.defaultSettings
-        }
-
-        //create memory defaults
-        this.filterIdsNext = 0;
-        this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
-        this.memory = {};
-        this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
-
-        if (this.attributes.useMemory) this.setMemory();
-        else sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
-
-        //call updatedPageData so that filter creation can be done with cross-dependencies
+        //and listen for calls to update
         document.addEventListener("updatedPageData", (e) => {
-            // if (this.attributes.useModifier) {
-            //     for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
-            // }
-            // else this.makeSimpleInputGroup();
+            //create memory from storage or defaults
+            this.setMemoryFromStorage();
+            //build filter
             this.makeFilter();
         });
 
         NMaker.filter = this;
     }
 
-    setMemory() {
+    setMemoryFromStorage() {
         this.memory = {};
 
-        //ids are used to enable the creation of subfilters, so they need to be kept intrisically linked. 
-        //Clear the ids, you must clear the filters. Make a filter, make an id. And vice-versa
+        //make filterIds from storage
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
         if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
             this.filterIds = storedFilterIds.split(",");
         }
-        this.filterIdsNext = this.filterIds.length > 0 ? ++this.filterIds[this.filterIds.length - 1].split("-")[1] : 0;
 
-        if (this.filterIds.length > 0) {
+        //if stored filters found, set memory from associated stored values
+        if (this.attributes.useMemory && this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
                 this.memory[this.filterIds[i]] = {
                     selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
@@ -789,18 +781,39 @@ class FilterMaker {
                     lowerValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-lower-value") ?? ""
                 };
 
-                //boolean checking
+                //boolean checking, otherwise would remain as strings 'true' or 'false'
                 if (this.memory[this.filterIds[i]].option == NMaker.filterOptions.boolean) {
                     this.memory[this.filterIds[i]].lowerValue = this.memory[this.filterIds[i]].lowerValue !== 'false';
                 }
             }
+        } else {
+            //storage memory should override defaults, but if none are found those defaults need to be kept.
+            this.initiateMemory();
         }
+    }
+
+    initiateMemory() {
+        //assuming no memory, so need to reset filterids as well
+        this.filterIdsNext = 0;
+        this.filterIds = [];
+        this.memory = {};
+
+        //if defaultSettings is array, for multiple filter defaults
+        if (Array.isArray(this.attributes.defaultSettings)) {
+            //Check if SubFilters are also in use, if not these defaults are not OK
+            if (!this.attributes.useSubFilter) throw new Error("Cannot use multiple filter default unless useSubFilter is true");
+
+            for (let set of this.attributes.defaultSettings) {
+                this.filterIds.push(this.attributes.id + "-" + this.filterIdsNext);
+                this.memory[this.filterIds[this.filterIdsNext++]] = set;
+            }
+            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
+        }
+        //else for a single filter default
         else {
-            //if no memory, use defaultSettings
             this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
-            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
-            this.memory = {};
             this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
+            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
         }
     }
 
@@ -870,9 +883,6 @@ class FilterMaker {
         //attach container to DOM
         NMaker.dom(this.attributes.id + "-filters").appendChild(container);
 
-        //create the initial input
-        this.makeSimpleInputGroup(id);
-
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
             this.makeModifierOptions(id);
@@ -937,11 +947,8 @@ class FilterMaker {
             //reset data
             NMaker.resetData();
 
-            //clear sessionStorage
-            sessionStorage.clear();
-
-            //reset memory
-            this.setMemory();
+            //clear sessionStorage of relevant items
+            NMaker.clearStorageOfId(this.attributes.id);
 
             //dispatch events to update filter and table
             NMaker.build();
@@ -955,14 +962,8 @@ class FilterMaker {
         return btnControlsContainer;
     }
 
-    remakeHistory() {
-        //reset data to be without filters
-        NMaker.resetData();
-
-        //clear sessionStorage
-        sessionStorage.clear();
-
-        //remake the filter memory
+    setMemory() {
+        //set memory from current filters
         this.memory = {};
         for (let filterId of this.filterIds) {
             let selection = NMaker.dom(filterId + "-selector").value;
@@ -985,12 +986,19 @@ class FilterMaker {
                 lowerValue: lowerValue,
                 upperValue: upperValue
             };
+        }
+    }
 
+    saveToStorage() {
+        //clear sessionStorage
+        sessionStorage.clear();
+
+        for (let filterId of this.filterIds) {
             //record in memory
-            sessionStorage.setItem(filterId + "-filter-memory-selection", selection);
-            sessionStorage.setItem(filterId + "-filter-memory-modifier", option);
-            sessionStorage.setItem(filterId + "-filter-memory-lower-value", lowerValue);
-            sessionStorage.setItem(filterId + "-filter-memory-upper-value", upperValue);
+            sessionStorage.setItem(filterId + "-filter-memory-selection", this.memory[filterId].selection);
+            sessionStorage.setItem(filterId + "-filter-memory-modifier", this.memory[filterId].option);
+            sessionStorage.setItem(filterId + "-filter-memory-lower-value", this.memory[filterId].lowerValue);
+            sessionStorage.setItem(filterId + "-filter-memory-upper-value", this.memory[filterId].upperValue);
         }
 
         sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
@@ -998,10 +1006,16 @@ class FilterMaker {
 
     makeSearchBtn() {
         return NMaker.makeBtn(this.attributes.id + "-search", "Search", () => {
-            //remake history
-            this.remakeHistory();
+            //reset data to be without filters
+            NMaker.resetData();
 
-            //use the memory stack to apply a sequence of filters
+            //update memory with what's in the filters
+            this.setMemory();
+
+            //save memory to storage for rebuild post-search
+            this.saveToStorage();
+
+            //use the memory to apply a sequence of filters
             for (let filter of Object.values(this.memory)) {
                 this.filter(filter.option, filter.selection, filter.lowerValue, filter.upperValue);
             }
@@ -1079,11 +1093,11 @@ class FilterMaker {
             case "boolean":
                 this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
                 break;
+            case "date":
+                this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
+                break;
             case "object":
-                if (type instanceof Date) {
-                    this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
-                }
-                else console.error("Invalid object value found");
+                console.error("Invalid object value found");
                 break;
             case "undefined":
                 console.error("Value is undefined");
@@ -1133,7 +1147,6 @@ class FilterMaker {
 
     makeSimpleInputGroup(id) {
         let type = NMaker.colTypes[NMaker.dom(id + "-selector").value];
-        let value = NMaker.data[0][NMaker.dom(id + "-selector").value];
 
         //make / remake input group and therefore inputs
         let inputGroup = NMaker.replaceElement(id + "-input-group", "div", this.attributes.classes.inputGroup);
@@ -1165,14 +1178,14 @@ class FilterMaker {
                 input.checked = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
+            case "date":
+                input.type = "date";
+                if (NMaker.isDate(this.memory[id].lowerValue)) input.value = this.memory[id].lowerValue;
+                else input.value = new Date().toISOString().split('T')[0];
+                NMaker.addStylesToElement(input, this.attributes.classes.input);
+                break;
             case "object":
-                if (value instanceof Date) {
-                    input.type = "date";
-                    if (NMaker.isDate(this.memory[id].lowerValue)) input.value = this.memory[id].lowerValue;
-                    else input.value = new Date().toISOString().split('T')[0];
-                    NMaker.addStylesToElement(input, this.attributes.classes.input);
-                }
-                else console.error("Invalid object value found");
+                console.error("Invalid object value found");
                 break;
             default:
                 throw new Error();
@@ -1209,7 +1222,8 @@ class FilterMaker {
             }
 
             //remake memory to save the selected filters to prevent awkward jumping around
-            this.remakeHistory();
+            this.setMemory();
+            this.saveToStorage();
 
             // update table
             NMaker.build();
