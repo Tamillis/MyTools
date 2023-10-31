@@ -25,7 +25,8 @@ class NMaker {
         before: "Before",
         after: "After",
         boolean: "Boolean",
-        select: "Select"
+        select: "Select",
+        empty: "Empty"
     });
     static paginatorOptions = Object.freeze({
         bookend: "Bookend",
@@ -307,7 +308,7 @@ class NMaker {
         document.dispatchEvent(NMaker.updatedData);
         document.dispatchEvent(NMaker.updatedPageData);
 
-        //if using memory pre-click search.
+        //if using memory pre-click search, but only once otherwise every rebuild triggered by events would be filtered and you'd never be able to see everything. Hacky and a refactor is needed.
         if (NMaker.initialBuild++ == 1 && NMaker.filter && NMaker.filter.attributes.useMemory) NMaker.dom(NMaker.filter.attributes.id + "-search").click();
     }
 }
@@ -720,8 +721,8 @@ class FilterMaker {
             useModifier: false,
             modifiers: {
                 number: [NMaker.filterOptions.equals, NMaker.filterOptions.greaterThan, NMaker.filterOptions.lessThan, NMaker.filterOptions.not, NMaker.filterOptions.numberRange],
-                string: [NMaker.filterOptions.contains, NMaker.filterOptions.select, NMaker.filterOptions.startsWith, NMaker.filterOptions.match, NMaker.filterOptions.excludes],
-                date: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange, NMaker.filterOptions.before, NMaker.filterOptions.after],
+                string: [NMaker.filterOptions.contains, NMaker.filterOptions.select, NMaker.filterOptions.startsWith, NMaker.filterOptions.match, NMaker.filterOptions.excludes, NMaker.filterOptions.empty],
+                date: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange, NMaker.filterOptions.before, NMaker.filterOptions.after, NMaker.filterOptions.empty],
                 boolean: [NMaker.filterOptions.boolean]
             },
             useColumnFilter: false,
@@ -1035,6 +1036,7 @@ class FilterMaker {
             if (modifier.value == NMaker.filterOptions.dateRange) this.makeDateRangeInputGroup(id);
             else if (modifier.value == NMaker.filterOptions.select) this.makeSelectInput(id);
             else if (modifier.value == NMaker.filterOptions.numberRange) this.makeNumberRangeInputGroup(id);
+            else if (modifier.value == NMaker.filterOptions.empty) this.emptyInput(id);
             else this.makeSimpleInputGroup(id);
         }
         NMaker.addStylesToElement(modifier, this.attributes.classes.modifier);
@@ -1232,6 +1234,10 @@ class FilterMaker {
         return toggleColBtn;
     }
 
+    emptyInput(id) {
+        NMaker.dom(id + "-input-container").appendChild(NMaker.replaceElement(id + "-input-group", "div", this.attributes.classes.inputContainer));
+    }
+
     makeDateRangeInputGroup(id) {
         let dateRangePicker = NMaker.makeDateRangePicker(id + "-input-group", this.attributes.classes, this.memory[id].lowerValue, this.memory[id].upperValue);
         dateRangePicker.title = "What to filter by"
@@ -1294,7 +1300,7 @@ class FilterMaker {
         for (let row of NMaker.filteredData) {
             //little null catching trickery
             if (row[prop] == null || lowerInputValue == null) {
-                if (row[prop] == null && lowerInputValue == null) filteredData.push(row);
+                if (row[prop] == null && (lowerInputValue == null || filterOption == NMaker.filterOptions.empty)) filteredData.push(row);
                 continue;
             }
 
@@ -1316,7 +1322,13 @@ class FilterMaker {
                     break;
                 case NMaker.filterOptions.not:
                 case NMaker.filterOptions.excludes:
-                    if (!row[prop].toString().toLowerCase().includes(lowerInputValue.toString().toLowerCase())) filteredData.push(row);
+                    let inputs = lowerInputValue.toString().toLowerCase().split(",");
+                    inputs = inputs.map(str => str.trim());
+                    let exclude = false;
+                    for(let input of inputs) {
+                        if (row[prop].toString().toLowerCase().includes(input)) exclude = true;
+                    }
+                    if(!exclude) filteredData.push(row);
                     break;
                 case NMaker.filterOptions.greaterThan:
                     if (Number(row[prop]) > Number(lowerInputValue)) filteredData.push(row);
@@ -1346,6 +1358,11 @@ class FilterMaker {
                     break;
                 case NMaker.filterOptions.numberRange:
                     if (row[prop] < upperInputValue && row[prop] > lowerInputValue) filteredData.push(row);
+                    break;
+                case NMaker.filterOptions.empty:
+                    //for getting only null or empty values
+                    if(row[prop] == null || row[prop] == "") filteredData.push(row);
+                    break;
             }
         }
 
