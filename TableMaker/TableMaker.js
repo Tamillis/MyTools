@@ -4,7 +4,7 @@ class NMaker {
     static data = [];
     static filteredData = [];
     static headings = [];
-    static hiddenHeadings = [];
+    static hiddenHeadings = false;
     static showHeadings = null;
     static displayHeadings = {};
     static displayValues = {};
@@ -111,7 +111,7 @@ class NMaker {
         if (sortOption == NMaker.sortOptions.numeric || sortOption == NMaker.sortOptions.date) return a - b;
         if (sortOption == NMaker.sortOptions.numericReverse || sortOption == NMaker.sortOptions.dateReverse) return b - a;
         if (sortOption == NMaker.sortOptions.alphabetical) {
-            if (a === null) return -1;
+            if (a === null) return 1;
             else return a.localeCompare(b);
         }
         if (sortOption == NMaker.sortOptions.alphabeticalReverse) {
@@ -245,9 +245,10 @@ class NMaker {
         NMaker.data = Object.freeze(data);
 
         //initial hidden headings as set by attributes
-        NMaker.hiddenHeadings = attributes.hide ? attributes.hide : [];
+        NMaker.hiddenHeadings = attributes.hide ? attributes.hide : false;
+
         //if using hide "all" and show attribute, calculate the hiddenHeadings
-        if (NMaker.hiddenHeadings.includes("all") && attributes.show) {
+        if (NMaker.hiddenHeadings && NMaker.hiddenHeadings.includes("all") && attributes.show) {
             NMaker.hiddenHeadings = [];
             for (let heading in NMaker.data[0]) {
                 if (attributes.show.includes(heading)) continue;
@@ -320,10 +321,11 @@ class TableMaker {
             id: "t-" + Date.now(),
             classes: {
                 table: ["table", "table-bordered"],
-                heading: ["h6", "align-text-bottom", "flex-fill", "me-2"],
-                headingContainer: ["d-flex", "flex-row"],
+                heading: ["h6", "text-center", "flex-fill", "me-2"],
+                headingContainer: ["d-flex", "flex-row", "justify-content-between"],
                 row: ["text-secondary"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
+                buttonGroup: ["btn-group"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
             conditionalClasses: false,
@@ -401,21 +403,6 @@ class TableMaker {
         }, this.attributes.classes.button);
     }
 
-    addSorting(head) {
-        // thead > tr > th
-        for (let th of head.childNodes[0].childNodes) {
-
-            if (this.attributes.sorting.includes(th.value) || (this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(th.value)))) {
-                //record the state of the sort button
-                if (this.attributes.sortingOrientation[th.value] == null) this.attributes.sortingOrientation[th.value] = "unset";
-
-                let btn = this.addSortBtn(th.value);
-                NMaker.addStylesToElement(btn, this.attributes.classes.button);
-                th.firstChild.appendChild(btn);
-            }
-        }
-    }
-
     generateTableHead() {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
@@ -423,9 +410,7 @@ class TableMaker {
             if (this.attributes.hide && this.attributes.hide.includes(heading)) continue;
 
             let th = document.createElement("th");
-
             th.value = heading;
-
             NMaker.addStylesToElement(th, this.attributes.classes.th);
 
             let headingContainer = document.createElement("div");
@@ -433,10 +418,33 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-
             span.innerText = NMaker.headings[heading];
-
             headingContainer.appendChild(span);
+
+            let btnContainer = document.createElement("div");
+            NMaker.addStylesToElement(btnContainer, this.attributes.classes.buttonGroup);
+            //sort btn
+            if ((this.attributes.sorting && this.attributes.sorting.includes(heading)) || 
+                (this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(heading)))) {
+                //record the state of the sort button
+                if (this.attributes.sortingOrientation[heading] == null) this.attributes.sortingOrientation[heading] = "unset";
+
+                let btn = this.addSortBtn(heading);
+                NMaker.addStylesToElement(btn, this.attributes.classes.button);
+                btnContainer.appendChild(btn);
+            }
+
+            //hide btn
+            if(NMaker.hiddenHeadings) {
+                let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
+                    NMaker.hiddenHeadings.push(heading);
+                    NMaker.build();
+                }, this.attributes.classes.button);
+                btnContainer.appendChild(hideBtn);
+            }
+
+            headingContainer.appendChild(btnContainer);
+
             th.appendChild(headingContainer);
             row.appendChild(th);
         }
@@ -559,13 +567,6 @@ class TableMaker {
         }
     }
 
-    fillTable() {
-        let head = this.generateTableHead();
-        if (this.attributes.sorting || (this.attributes.sorting && this.attributes.sorting.includes("all") && this.attributes.noSorting)) this.addSorting(head);
-
-        this.generateTableBody();
-    }
-
     makeTable() {
         this.table = NMaker.replaceElement(this.attributes.id, "table");
 
@@ -575,7 +576,8 @@ class TableMaker {
 
         NMaker.dom(this.attributes.parentSelector).appendChild(this.table);
 
-        this.fillTable();
+        this.generateTableHead();
+        this.generateTableBody();
     }
 }
 
@@ -1047,7 +1049,7 @@ class FilterMaker {
     makeSelector(id = this.attributes.id) {
         let selector = document.createElement("select");
         selector.id = id + "-selector";
-        selector.title = "What column to filter by";
+        selector.title = "What column to filter by";z
         let headings = NMaker.sort(Object.values(NMaker.headings), this.attributes.order);
 
         for (let displayHeading of headings) {
