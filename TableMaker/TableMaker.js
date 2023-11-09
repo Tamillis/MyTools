@@ -727,7 +727,6 @@ class FilterMaker {
                 date: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange, NMaker.filterOptions.before, NMaker.filterOptions.after, NMaker.filterOptions.empty],
                 boolean: [NMaker.filterOptions.boolean]
             },
-            useColumnFilter: false,
             useSubFilter: false,
             useMemory: false,
             defaultSettings: {
@@ -926,9 +925,6 @@ class FilterMaker {
 
         selectionContainer.appendChild(selectionInputGroup);
 
-        //If 'useColumnFilter' is true, add the column show/hide button
-        if (this.attributes.useColumnFilter) selectionInputGroup.insertBefore(this.makeColToggleBtn(id, selector.value), selector);
-
         return selectionContainer;
     }
 
@@ -1049,7 +1045,7 @@ class FilterMaker {
     makeSelector(id = this.attributes.id) {
         let selector = document.createElement("select");
         selector.id = id + "-selector";
-        selector.title = "What column to filter by";z
+        selector.title = "What column to filter by";
         let headings = NMaker.sort(Object.values(NMaker.headings), this.attributes.order);
 
         for (let displayHeading of headings) {
@@ -1064,7 +1060,6 @@ class FilterMaker {
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
 
         selector.onchange = () => {
-            if (this.attributes.useColumnFilter) NMaker.dom(id + "-col-filter").innerText = NMaker.hiddenHeadings.includes(selector.value) ? "Show" : "Hide";
             if (this.attributes.useModifier) this.makeModifierOptions(id);
             else this.makeSimpleInputGroup(id);
         }
@@ -1203,37 +1198,6 @@ class FilterMaker {
 
         //attach to input container
         NMaker.dom(id + "-input-container").appendChild(inputGroup);
-    }
-
-    makeColToggleBtn(id, value) {
-        //currently selected prop
-        let prop = value;
-
-        let btnName = NMaker.hiddenHeadings.includes(prop) ? "Show" : "Hide";
-
-        let toggleColBtn = NMaker.makeBtn(id + "-col-filter", btnName, () => {
-            //currently selected prop
-            let prop = NMaker.dom(id + "-selector").value;
-
-            //check if current selected prop is on Table's hidden list
-            if (NMaker.hiddenHeadings.includes(prop)) {
-                NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter((h) => h !== prop);
-                toggleColBtn.innerText = "Hide";
-            }
-            else {
-                NMaker.hiddenHeadings.push(prop);
-                toggleColBtn.innerText = "Show";
-            }
-
-            //remake memory to save the selected filters to prevent awkward jumping around
-            this.setMemory();
-            this.saveToStorage();
-
-            // update table
-            NMaker.build();
-        }, this.attributes.classes.button, "Hide or Show selected column in the table");
-
-        return toggleColBtn;
     }
 
     emptyInput(id) {
