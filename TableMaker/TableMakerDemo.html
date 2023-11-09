@@ -39,6 +39,15 @@
             min-width: 2.5rem;
             height: 2.5rem;
         }
+
+        select {
+            appearance: none;
+        }
+
+        /* For IE10 */
+        select::-ms-expand {
+            display: none;
+        }
     </style>
     <script src="TableMaker.js" defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -255,7 +264,7 @@
                     option: NMaker.filterOptions.after,
                     lowerValue: "2012-12-25",
                     upperValue: null
-                },{
+                }, {
                     selection: "balance",
                     option: NMaker.filterOptions.greaterThan,
                     lowerValue: 2000,

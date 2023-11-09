@@ -5,6 +5,7 @@ class NMaker {
     static filteredData = [];
     static headings = [];
     static hiddenHeadings = false;
+    static initialHiddenHeadings = false;
     static showHeadings = null;
     static displayHeadings = {};
     static displayValues = {};
@@ -235,6 +236,7 @@ class NMaker {
     static resetData() {
         NMaker.filteredData = NMaker.data;
         NMaker.pagedData = NMaker.data;
+        
         NMaker.dom("filter-search-history") ? NMaker.dom("filter-search-history").innerText = "" : null;
     }
 
@@ -254,7 +256,11 @@ class NMaker {
                 if (attributes.show.includes(heading)) continue;
                 else NMaker.hiddenHeadings.push(heading);
             }
+            NMaker.initialHiddenHeadings = NMaker.hiddenHeadings;
         }
+
+        //save initial hidden headings
+        NMaker.initialHiddenHeadings = [...NMaker.hiddenHeadings];
 
         //generate initial coltypes from first row of data, accepting attribute overrides after
         NMaker.colTypes = { ...NMaker.data[0] }
@@ -946,6 +952,9 @@ class FilterMaker {
             //reset data
             NMaker.resetData();
 
+            //reset cols
+            NMaker.hiddenHeadings = [...NMaker.initialHiddenHeadings];
+
             //clear sessionStorage of relevant items
             NMaker.clearStorageOfId(this.attributes.id);
 
@@ -953,6 +962,30 @@ class FilterMaker {
             NMaker.build();
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
+
+        //show button, which is a select box whose first option is the btn icon, and whose selections get put into the hiddenHeadings list, the select box itself resetting.
+        let showBtn = document.createElement("select");
+        showBtn.id = this.attributes.id + "-show";
+        showBtn.title = "Select hidden columns to show";
+        let defaultOption = document.createElement("option");
+        defaultOption.innerText = "👁";
+        defaultOption.style.display = "none";
+        defaultOption.selected = true;
+        showBtn.appendChild(defaultOption);
+        for(let heading of NMaker.hiddenHeadings) {
+            let opt = document.createElement("option");
+            opt.innerText = heading;
+            showBtn.appendChild(opt);
+        }
+        showBtn.onchange = () => {
+            NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter(h => h !== showBtn.value);
+            showBtn.value = showBtn.firstElementChild.innerText;
+            NMaker.build();
+        }
+        NMaker.addStylesToElement(showBtn, this.attributes.classes.button);
+        showBtn.style.width = "2.5rem";
+
+        btnControlsContainer.appendChild(showBtn);
 
         //make the search button
         let searchBtn = this.makeSearchBtn();
