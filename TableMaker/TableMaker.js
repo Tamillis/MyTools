@@ -236,7 +236,7 @@ class NMaker {
     static resetData() {
         NMaker.filteredData = NMaker.data;
         NMaker.pagedData = NMaker.data;
-        
+
         NMaker.dom("filter-search-history") ? NMaker.dom("filter-search-history").innerText = "" : null;
     }
 
@@ -430,7 +430,7 @@ class TableMaker {
             let btnContainer = document.createElement("div");
             NMaker.addStylesToElement(btnContainer, this.attributes.classes.buttonGroup);
             //sort btn
-            if ((this.attributes.sorting && this.attributes.sorting.includes(heading)) || 
+            if ((this.attributes.sorting && this.attributes.sorting.includes(heading)) ||
                 (this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(heading)))) {
                 //record the state of the sort button
                 if (this.attributes.sortingOrientation[heading] == null) this.attributes.sortingOrientation[heading] = "unset";
@@ -441,7 +441,7 @@ class TableMaker {
             }
 
             //hide btn
-            if(NMaker.hiddenHeadings) {
+            if (NMaker.hiddenHeadings) {
                 let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
                     NMaker.hiddenHeadings.push(heading);
                     NMaker.build();
@@ -972,18 +972,20 @@ class FilterMaker {
         defaultOption.style.display = "none";
         defaultOption.selected = true;
         showBtn.appendChild(defaultOption);
-        for(let heading of NMaker.hiddenHeadings) {
+
+        //todo sort
+        for (let heading of NMaker.sort(NMaker.hiddenHeadings, this.attributes.order)) {
             let opt = document.createElement("option");
-            opt.innerText = heading;
+            opt.value = heading;
+            opt.innerText = NMaker.headings[heading];
             showBtn.appendChild(opt);
         }
         showBtn.onchange = () => {
             NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter(h => h !== showBtn.value);
-            showBtn.value = showBtn.firstElementChild.innerText;
+            showBtn.value = showBtn.firstElementChild.value;
             NMaker.build();
         }
         NMaker.addStylesToElement(showBtn, this.attributes.classes.button);
-        showBtn.style.width = "2.5rem";
 
         btnControlsContainer.appendChild(showBtn);
 
@@ -1324,10 +1326,10 @@ class FilterMaker {
                     let inputs = lowerInputValue.toString().toLowerCase().split(",");
                     inputs = inputs.map(str => str.trim());
                     let exclude = false;
-                    for(let input of inputs) {
+                    for (let input of inputs) {
                         if (row[prop].toString().toLowerCase().includes(input)) exclude = true;
                     }
-                    if(!exclude) filteredData.push(row);
+                    if (!exclude) filteredData.push(row);
                     break;
                 case NMaker.filterOptions.greaterThan:
                     if (Number(row[prop]) > Number(lowerInputValue)) filteredData.push(row);
@@ -1360,7 +1362,7 @@ class FilterMaker {
                     break;
                 case NMaker.filterOptions.empty:
                     //for getting only null or empty values
-                    if(row[prop] == null || row[prop] == "") filteredData.push(row);
+                    if (row[prop] == null || row[prop] == "") filteredData.push(row);
                     break;
             }
         }
