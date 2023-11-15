@@ -427,7 +427,7 @@ class TableMaker {
             NMaker.addStylesToElement(btnContainer, this.attributes.classes.buttonGroup);
             //sort btn
             if ((this.attributes.sorting && this.attributes.sorting.includes(heading)) ||
-                (this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(heading)))) {
+                (this.attributes.sorting && this.attributes.sorting.includes("all") && !(this.attributes.noSorting && this.attributes.noSorting.includes(heading)))) {
                 //record the state of the sort button
                 if (this.attributes.sortingOrientation[heading] == null) this.attributes.sortingOrientation[heading] = "unset";
 
@@ -754,10 +754,7 @@ class FilterMaker {
             ...attributes.modifier
         }
 
-        this.attributes.defaultSettings = {
-            ...this.attributeDefaults.defaultSettings,
-            ...attributes.defaultSettings
-        }
+        this.attributes.defaultSettings = attributes.defaultSettings ?? this.attributeDefaults.defaultSettings;
 
         //and listen for calls to update
         document.addEventListener("updatedPageData", (e) => {
