@@ -81,7 +81,7 @@ The tableMaker functions simply: through data provided to the `attributes` input
 | `sorting` | an array of strings for the columns that you want sorting functionality on, by json parameter name. Uses `sortingOrientation` to track state. Defaults to `false` |
 |  `currency` | an array of strings for the columns that you want to be displayed as currency, by json parameter name. Defaults to `false`|
 | `link` | an array of objects of two properties: `name` that denotes the column to be effected and `text` which denotes the text of the link. The actual link's `href` is the data of the column so that ought to be valid href data  |
-| `conditionalClasses` | An object where each property is a header of your data, the value of which is an object with `condition` `target` and optional `classesIf` and `classesNot` properties used to tell TableMaker how to conditionally apply classes. The `condition` replaces the headings it finds in its string, with the data of the row for that heading. |
+| `conditionalClasses` | An object where each property is a header of your data, the value of which is an object with `condition` `target` and optional `classesIf` and `classesNot` properties used to tell TableMaker how to conditionally apply classes. The `condition` replaces the headings it finds in its string, with the data of the row for that heading. Targets are `row` `cell` and `link` |
 
 Classes defaults: 
 
