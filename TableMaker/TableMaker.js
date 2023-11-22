@@ -976,7 +976,6 @@ class FilterMaker {
             showBtn.appendChild(defaultOption);
 
             for (let heading of NMaker.sort(NMaker.hiddenHeadings, this.attributes.order)) {
-                if (this.attributes.ignore.includes(heading)) continue;
                 let opt = document.createElement("option");
                 opt.value = heading;
                 opt.innerText = NMaker.headings[heading];
