@@ -954,7 +954,7 @@ class FilterMaker {
             NMaker.resetData();
 
             //reset cols
-            if(NMaker.hiddenHeadings) NMaker.hiddenHeadings = [...NMaker.initialHiddenHeadings];
+            if (NMaker.hiddenHeadings) NMaker.hiddenHeadings = [...NMaker.initialHiddenHeadings];
 
             //clear sessionStorage of relevant items
             NMaker.clearStorageOfId(this.attributes.id);

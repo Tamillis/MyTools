@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Null Date Picker</title>
+</head>
+
+<body>
+    <!-- My attempt to learn templates and slots to make a custom element: a nullable date input -->
+
+    <!-- Hilariously not working because inputs are weird and difficult -->
+
+    <script>
+        class DateOrNoneInput extends HTMLInputElement {
+            static get observedAttributes() {
+                return ["type", "value"];
+            }
+            constructor() {
+                super();
+            }
+
+            connectedCallback() {
+                this.value = "Empty";
+                this.type = "date";
+            }
+
+            attributeChangedCallback(name, oldValue, newValue) {
+                if (name == "value" && newValue == "") this.value = "Empty";
+            }
+        }
+
+        customElements.define("date-or-none-input", DateOrNoneInput, { extends: "input" });
+    </script>
+
+    <input is="date-or-none-input" onchange="document.getElementById('val').innerText = this.value"/>
+    <p id="val"></p>
+</body>
+
+</html>
