@@ -687,7 +687,7 @@ class PaginatorMaker {
     }
 
     togglePaginator() {
-        if (this.pages == 1) NMaker.dom(this.attributes.id).hidden = true;
+        if (this.pages <= 1) NMaker.dom(this.attributes.id).hidden = true;
         else NMaker.dom(this.attributes.id).hidden = false;
     }
 
@@ -770,11 +770,18 @@ class FilterMaker {
     setMemoryFromStorage() {
         this.memory = {};
 
-        //make filterIds from storage
+        //make filterIds from storage if using memory, 
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
-        if (this.attributes.useSubFilter && storedFilterIds !== null && storedFilterIds.split(",").length > 0) {
-            this.filterIds = storedFilterIds.split(",");
+        if(this.attributes.useMemory && storedFilterIds !== null) {
+            //if using subfilter, multiple storedFilerIds is ok            
+            if (this.attributes.useSubFilter) {
+                this.filterIds = storedFilterIds.split(",");
+            }
+            else {
+                //else use an array of only the first found result, should somehow more than one be found
+                this.filterIds = [storedFilterIds.split(",")[0]];
+            }
         }
 
         //if stored filters found, set memory from associated stored values
@@ -853,15 +860,10 @@ class FilterMaker {
         //a sub filter has only its own selection section and input section (no search box, reset btn, etc)
         //the subfilter has its own ID and uses that to piggy back on all the other filter maker functions
 
-        //if id is null, a new dynamic subfilter is being made
+        //if id is null, subfilters aren't in use, so id should be this.filterIds[0]
         if (id == null) {
-            id = this.attributes.id + "-" + this.filterIdsNext++;
-
-            //push id of subfilter to filterIds
-            this.filterIds.push(id);
-
-            //start setting up new memory entry
-            this.memory[id] = {};
+            if(this.filterIds.length > 1) console.warning("this.filterIds should be of length 1, but is greater");
+            id = this.filterIds[0];
         }
 
         //make subfilter container

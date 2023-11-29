@@ -248,11 +248,12 @@
                 parentSelector: "#filter-container",
                 order: NMaker.sortOptions.alphabetical,
                 ignore: ["picture", "about"],
-                useModifier: true,
                 classes: {
                     checkbox: ["form-input-check", "spacer"],
                     button: ["btn", "btn-sm", "btn-outline-primary", "min-width-is-height"]
                 },
+                useModifier: true,
+                useMemory: true,
                 useSubFilter: true,
                 // defaultSettings: {
                 //     selection: "name",
@@ -270,8 +271,7 @@
                     option: NMaker.filterOptions.greaterThan,
                     lowerValue: 2000,
                     upperValue: null
-                }],
-                useMemory: true
+                }]
             });
 
             NMaker.build();
