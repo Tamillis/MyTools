@@ -773,7 +773,7 @@ class FilterMaker {
         //make filterIds from storage if using memory, 
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
-        if(this.attributes.useMemory && storedFilterIds !== null) {
+        if (this.attributes.useMemory && storedFilterIds !== null) {
             //if using subfilter, multiple storedFilerIds is ok            
             if (this.attributes.useSubFilter) {
                 this.filterIds = storedFilterIds.split(",");
@@ -807,7 +807,6 @@ class FilterMaker {
 
     initiateMemory() {
         //assuming no memory, so need to reset filterids as well
-        this.filterIdsNext = 0;
         this.filterIds = [];
         this.memory = {};
 
@@ -817,17 +816,39 @@ class FilterMaker {
             if (!this.attributes.useSubFilter) throw new Error("Cannot use multiple filter default unless useSubFilter is true");
 
             for (let set of this.attributes.defaultSettings) {
-                this.filterIds.push(this.attributes.id + "-" + this.filterIdsNext);
-                this.memory[this.filterIds[this.filterIdsNext++]] = set;
+                this.filterIds.push(this.makeNewFilterId());
+                this.memory[this.filterIds[this.filterIds.length - 1]] = set;
             }
             sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
         }
         //else for a single filter default
         else {
-            this.filterIds = [this.attributes.id + "-" + this.filterIdsNext++];
+            this.filterIds = [this.getNextFilterId()];
             this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
             sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
         }
+    }
+
+    getNextFilterId() {
+        //this method should be the only way to handle getting this.filterIdsNext so that this is properly contained to avoid issues
+        if (!this.filterIdsNext) {
+            this.filterIdsNext = 0;
+
+            //if using memory get next filter id after stored ids, if such exist
+            let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
+            if (this.attributes.useMemory && storedFilterIds !== null) {
+                storedFilterIds = storedFilterIds.split(',');
+                //get the value at the end of the last filter id
+                this.filterIdsNext = Number(storedFilterIds[storedFilterIds.length - 1].split('-')[1]) + 1;
+            }
+        }
+        return this.attributes.id + "-" + this.filterIdsNext;
+    }
+
+    makeNewFilterId() {
+        if(!this.filterIdsNext) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
+        else this.filterIdsNext++;
+        return this.attributes.id + "-" + this.filterIdsNext;
     }
 
     makeFilter() {
@@ -862,7 +883,7 @@ class FilterMaker {
 
         //if id is null, subfilters aren't in use, so id should be this.filterIds[0]
         if (id == null) {
-            if(this.filterIds.length > 1) console.warning("this.filterIds should be of length 1, but is greater");
+            if (this.filterIds.length > 1) console.warn("this.filterIds should be of length 1, but is greater");
             id = this.filterIds[0];
         }
 
@@ -944,8 +965,26 @@ class FilterMaker {
         if (this.attributes.useSubFilter) {
             //add filter button
             let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => {
-                this.makeSubFilter();
+                //generate new id
+                this.filterIds.push(this.makeNewFilterId());
+
+                //make memory entry for that new filter
+                this.memory[this.filterIds[this.filterIds.length - 1]] = {
+                    selection: Object.keys(NMaker.data[0])[0],
+                    option: NMaker.filterOptions.contains,
+                    upperValue: "",
+                    lowerValue: ""
+                }
+
+                //create that subfilter
+                this.makeSubFilter(this.filterIds[this.filterIds.length - 1]);
+
+                //saveToStorage to propogate new subfilter
+                this.saveToStorage();
+
+                //toggle presence of remove btns
                 this.toggleRemoveBtns();
+
             }, this.attributes.classes.button, "Add filter");
             btnControlsContainer.appendChild(addBtn);
         }
@@ -1000,7 +1039,7 @@ class FilterMaker {
         return btnControlsContainer;
     }
 
-    setMemory() {
+    setMemoryFromFilters() {
         //set memory from current filters
         this.memory = {};
         for (let filterId of this.filterIds) {
@@ -1038,7 +1077,6 @@ class FilterMaker {
             sessionStorage.setItem(filterId + "-filter-memory-lower-value", this.memory[filterId].lowerValue);
             sessionStorage.setItem(filterId + "-filter-memory-upper-value", this.memory[filterId].upperValue);
         }
-
         sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
     }
 
@@ -1048,7 +1086,7 @@ class FilterMaker {
             NMaker.resetData();
 
             //update memory with what's in the filters
-            this.setMemory();
+            this.setMemoryFromFilters();
 
             //save memory to storage for rebuild post-search
             this.saveToStorage();
@@ -1135,7 +1173,9 @@ class FilterMaker {
                 this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
                 break;
             case "object":
-                console.error("Invalid object value found");
+                console.warn("Invalid object value found");
+                NMaker.colTypes[NMaker.dom(id + "-selector").value] = "string";
+                this.attachOptions(modifier, this.attributes.modifiers.string, NMaker.filterOptions.contains);
                 break;
             case "undefined":
                 console.error("Value is undefined");
@@ -1223,7 +1263,7 @@ class FilterMaker {
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
             case "object":
-                console.error("Invalid object value found");
+                console.error("Invalid object value found, did you define correct colTypes?");
                 break;
             default:
                 throw new Error();
