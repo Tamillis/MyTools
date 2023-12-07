@@ -106,9 +106,8 @@
         });
 
         let visible = false;
-        let paginator;
-        let filter;
-        let table;
+        let tailored;
+        let defaults;
 
         function showRaw(el) {
             visible = !visible;
@@ -131,25 +130,7 @@
         }
 
         function makeTailored() {
-            removeOld(paginator);
-            removeOld(filter);
-            removeOld(table);
-            delete NMaker;
-
-            makeSuiteTailored();
-        }
-
-        function makeDefaults() {
-            removeOld(paginator);
-            removeOld(filter);
-            removeOld(table);
-            delete NMaker;
-
-            makeSuiteDefaults();
-        }
-
-        function makeSuiteTailored() {
-            NMaker.init(data, {
+            tailored = new Maker(data, {
                 displayHeadings: {
                     phone: "Phone №"
                 },
@@ -195,7 +176,7 @@
                 show: ["balance", "age", "eyeColor", "name", "gender", "address", "registered", "renting"]
             });
 
-            paginator = new PaginatorMaker({
+            tailored.makePaginator({
                 id: "newPaginator",
                 parentSelector: "#paginator-container",
                 pageLength: 5,
@@ -203,7 +184,7 @@
             });
 
 
-            table = new TableMaker({
+            tailored.makeTable({
                 id: "newTable",
                 parentSelector: "#table-container",
                 //sorting: ["balance", "eye color", "name", "age", "registered", "company", "email", "phone", "address"],
@@ -243,7 +224,7 @@
                 }
             });
 
-            filter = new FilterMaker({
+            tailored.makeFilter({
                 id: "f",
                 parentSelector: "#filter-container",
                 order: NMaker.sortOptions.alphabetical,
@@ -274,14 +255,14 @@
                 }]
             });
 
-            NMaker.build();
+            tailored.build();
         }
 
-        function makeSuiteDefaults() {
-            NMaker.init(data);
-            paginator = new PaginatorMaker();
-            table = new TableMaker();
-            filter = new FilterMaker();
+        function makeDefaults() {
+            defaults = new Maker(data, {hide:["about"]});
+            defaults.makeTable();
+            defaults.makeFilter();
+            defaults.build();
         }
     </script>
 </body>

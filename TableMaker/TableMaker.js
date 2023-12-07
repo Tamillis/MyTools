@@ -1,16 +1,4 @@
 class NMaker {
-    static updatedData = new Event("updatedData");
-    static updatedPageData = new Event("updatedPageData");
-    static data = [];
-    static filteredData = [];
-    static headings = [];
-    static hiddenHeadings = false;
-    static initialHiddenHeadings = false;
-    static showHeadings = null;
-    static displayHeadings = {};
-    static displayValues = {};
-    static initialBuild = 1;
-
     static filterOptions = Object.freeze({
         equals: "=",
         greaterThan: ">",
@@ -42,10 +30,6 @@ class NMaker {
         date: "Date",
         dateReverse: "Date-reverse"
     });
-
-    static table;
-    static filter;
-    static paginator;
 
     static dom(queryString) {
         //just a shorter and slightly more flexible utility for getting DOM element/s, accepts id's as plain strings or css style selectors, and only returns a nodelist if multiple matches are found
@@ -225,6 +209,7 @@ class NMaker {
         return numberRangePicker;
     }
 
+    //all NMaker stored data start with their attribute plus -etc so this removes all storage kvp assocaited with element of id 'id'
     static clearStorageOfId(id) {
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
             if (sessionStorage.key(i).startsWith(id)) {
@@ -232,96 +217,108 @@ class NMaker {
             }
         }
     }
+}
 
-    static resetData() {
-        NMaker.filteredData = NMaker.data;
-        NMaker.pagedData = NMaker.data;
-
-        NMaker.dom("filter-search-history") ? NMaker.dom("filter-search-history").innerText = "" : null;
-    }
-
-    static init(data, attributes = {}) {
+class Maker {
+    constructor(data, attributes = {}) {
         if (!NMaker.IsCompatible(data)) throw new Error("No or invalid JSON provided");
-        NMaker.filteredData = [...data];
-        NMaker.pagedData = [...data];
-        NMaker.data = Object.freeze(data);
+
+        this.activeData = [...data];
+        this.initialData = Object.freeze(data);
+        this.data = data;
+
+        this.headings = [];
+        this.hiddenHeadings = false;
+        this.initialHiddenHeadings = false;
+        this.showHeadings = null;
 
         //initial hidden headings as set by attributes
-        NMaker.hiddenHeadings = attributes.hide ? attributes.hide : false;
+        this.hiddenHeadings = attributes.hide ? attributes.hide : false;
 
         //if using hide "all" and show attribute, calculate the hiddenHeadings
-        if (NMaker.hiddenHeadings && NMaker.hiddenHeadings.includes("all") && attributes.show) {
-            NMaker.hiddenHeadings = [];
-            for (let heading in NMaker.data[0]) {
+        if (this.hiddenHeadings && this.hiddenHeadings.includes("all") && attributes.show) {
+            this.hiddenHeadings = [];
+            for (let heading in this.data[0]) {
                 if (attributes.show.includes(heading)) continue;
-                else NMaker.hiddenHeadings.push(heading);
+                else this.hiddenHeadings.push(heading);
             }
-            NMaker.initialHiddenHeadings = NMaker.hiddenHeadings;
+            this.initialHiddenHeadings = this.hiddenHeadings;
         }
 
-        //save initial hidden headings
-        if (NMaker.hiddenHeadings) NMaker.initialHiddenHeadings = [...NMaker.hiddenHeadings];
+        //save initial hidden headings for reset purposes
+        if (this.hiddenHeadings) this.initialHiddenHeadings = [...this.hiddenHeadings];
 
         //generate initial coltypes from first row of data, accepting attribute overrides after
-        NMaker.colTypes = { ...NMaker.data[0] }
-        for (let prop in NMaker.colTypes) {
-            let type = typeof NMaker.colTypes[prop];
-            if (type == 'object' && NMaker.colTypes[prop] instanceof Date) type = 'date';
-            NMaker.colTypes[prop] = type;
+        this.colTypes = { ...this.data[0] }
+        for (let prop in this.colTypes) {
+            let type = typeof this.colTypes[prop];
+            if (type == 'object' && this.colTypes[prop] instanceof Date) type = 'date';
+            this.colTypes[prop] = type;
         }
-        NMaker.colTypes = { ...NMaker.colTypes, ...attributes.colTypes }
+        this.colTypes = { ...this.colTypes, ...attributes.colTypes }
 
-        for (let key of Object.keys(data[0])) NMaker.headings[key] = NMaker.toCapitalizedWords(key);
+        for (let key of Object.keys(data[0])) this.headings[key] = NMaker.toCapitalizedWords(key);
 
+        this.displayHeadings = {};
         if (attributes.displayHeadings) {
             for (let heading of Object.keys(attributes.displayHeadings)) {
-                NMaker.headings[heading] = attributes.displayHeadings[heading];
+                this.headings[heading] = attributes.displayHeadings[heading];
             }
         }
 
+        this.displayValues = {};
         if (attributes.displayValues) {
             for (let displayValue in attributes.displayValues) {
-                NMaker.displayValues[displayValue] = attributes.displayValues[displayValue];
+                this.displayValues[displayValue] = attributes.displayValues[displayValue];
             }
         }
     }
 
-    static build() {
-        //build in ideal build order automatically, and do what is necessary if bits are missing?
+    makeTable(attributes = {}) {
+        this.table = new TableMaker(this, attributes);
+    }
 
-        // //PAGINATOR
-        // document.addEventListener("updatedData", (e) => {
-        //     this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
-        //     this.page = 1;
-        //     NMaker.pagedData = this.getPagedData();
-        //     NMaker.paginator.makePaginator();
-        // });
+    makeFilter(attributes = {}) {
+        this.filter = new FilterMaker(this, attributes);
+    }
 
-        // //TABLE
-        // document.addEventListener("updatedPageData", (e) => {
-        //     this.data = NMaker.pagedData;
-        //     NMaker.table.makeTable();
-        // });
+    makePaginator(attributes = {}) {
+        this.paginator = new PaginatorMaker(this, attributes);
+    }
 
-        // //FILTER
-        // //call updatedPageData so that filter creation can be done with cross-dependencies
-        // document.addEventListener("updatedPageData", (e) => {
-        //     if (this.attributes.useModifier) {
-        //         for (let id of this.filterIds) NMaker.dom(id + "-modifier").onchange();
-        //     }
-        //     else this.makeSimpleInputGroup();
-        // });
+    build(data = null) {
+        if (!this.table) throw new Error("Cannot build without first calling makeTable to generate an instance of TableMaker.");
 
-        document.dispatchEvent(NMaker.updatedData);
-        document.dispatchEvent(NMaker.updatedPageData);
+        //reset active data
+        if (data) this.activeData = data;
+        else this.activeData = this.getActiveData();
 
-        //if using memory pre-click search, but only once otherwise every rebuild triggered by events would be filtered and you'd never be able to see everything. Hacky and a refactor is needed.
-        if (NMaker.initialBuild++ == 1 && NMaker.filter && NMaker.filter.attributes.useMemory) NMaker.dom(NMaker.filter.attributes.id + "-search").click();
+        if (this.filter) this.filter.makeFilter();
+
+        if (this.paginator) {
+            this.activeData = this.paginator.getPagedData(this.activeData);
+            this.paginator.makePaginator();
+        }
+
+        this.table.makeTable(this.activeData);
+    }
+
+    getActiveData() {
+        let data = this.data;
+
+        if (this.filter) {
+            this.filter.setMemoryFromStorage();
+            for (let filter of Object.values(this.filter.memory)) {
+                data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
+            }
+        }
+
+        return data;
     }
 }
 
 class TableMaker {
-    constructor(attributes = {}) {
+    constructor(Maker, attributes = {}) {
         //Defaults
         this.attributeDefaults = {
             id: "t-" + Date.now(),
@@ -353,12 +350,7 @@ class TableMaker {
             ...attributes.classes
         }
 
-        NMaker.table = this;
-
-        document.addEventListener("updatedPageData", (e) => {
-            NMaker.table.data = NMaker.pagedData;
-            NMaker.table.makeTable();
-        });
+        this.Maker = Maker;
     }
 
     addSortBtn(column) {
@@ -374,14 +366,10 @@ class TableMaker {
                 else this.attributes.sortingOrientation[col] = "unset";
             }
 
-            //sort the exposed data based on its type
-            let data;
-            if (NMaker.paginator) data = NMaker.filteredData;
-            else data = NMaker.pagedData;
-
-            data = data.slice().sort((prevRow, currRow) => {
+            //sort the data based on its type
+            this.Maker.data = this.Maker.data.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
-                switch (NMaker.colTypes[column]) {
+                switch (this.Maker.colTypes[column]) {
                     case "number":
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
                         break;
@@ -398,17 +386,14 @@ class TableMaker {
                 return NMaker.compare(sortOption, prevRow[column], currRow[column]);
             });
 
-            if (NMaker.paginator) NMaker.filteredData = data;
-            else NMaker.pagedData = data;
-
-            NMaker.build();
+            this.Maker.build();
         }, this.attributes.classes.button);
     }
 
     generateTableHead() {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
-        for (let heading of Object.keys(NMaker.headings)) {
+        for (let heading of Object.keys(this.Maker.headings)) {
             if (this.attributes.hide && this.attributes.hide.includes(heading)) continue;
 
             let th = document.createElement("th");
@@ -420,7 +405,7 @@ class TableMaker {
 
             let span = document.createElement("span");
             NMaker.addStylesToElement(span, this.attributes.classes.heading);
-            span.innerText = NMaker.headings[heading];
+            span.innerText = this.Maker.headings[heading];
             headingContainer.appendChild(span);
 
             let btnContainer = document.createElement("div");
@@ -437,10 +422,10 @@ class TableMaker {
             }
 
             //hide btn
-            if (NMaker.hiddenHeadings) {
+            if (this.Maker.hiddenHeadings) {
                 let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
-                    NMaker.hiddenHeadings.push(heading);
-                    NMaker.build();
+                    this.Maker.hiddenHeadings.push(heading);
+                    this.Maker.build();
                 }, this.attributes.classes.button);
                 btnContainer.appendChild(hideBtn);
             }
@@ -454,11 +439,11 @@ class TableMaker {
     }
 
 
-    generateTableBody() {
+    generateTableBody(data) {
         let tbody = this.table.createTBody();
         NMaker.addStylesToElement(tbody, this.attributes.classes.tbody);
 
-        for (let rowData of this.data) {
+        for (let rowData of data) {
             this.generateRow(tbody, rowData, this.attributes.classes.row);
         }
         return tbody;
@@ -480,6 +465,8 @@ class TableMaker {
         let tr = tbody.insertRow();
 
         for (let key in data) {
+            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
+
             let td = document.createElement("td");
 
             NMaker.addStylesToElement(td, classes);
@@ -488,13 +475,13 @@ class TableMaker {
             let content = data[key];
 
             //check if displayValues exist for key
-            if (NMaker.displayValues.hasOwnProperty(key)) {
-                if (Array.isArray(NMaker.displayValues[key])) {
-                    for (let dv of NMaker.displayValues[key]) {
+            if (this.Maker.displayValues.hasOwnProperty(key)) {
+                if (Array.isArray(this.Maker.displayValues[key])) {
+                    for (let dv of this.Maker.displayValues[key]) {
                         content = this.getDisplayValue(dv, content, data, key);
                     }
                 } else {
-                    content = this.getDisplayValue(NMaker.displayValues[key], content, data, key);
+                    content = this.getDisplayValue(this.Maker.displayValues[key], content, data, key);
                 }
             }
 
@@ -533,8 +520,6 @@ class TableMaker {
                 else this.addConditionalClass(data, tr, td, { ...this.attributes.conditionalClasses[key] });
             }
 
-            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
-
             tr.appendChild(td);
         }
     }
@@ -543,7 +528,7 @@ class TableMaker {
         //Replace any prop in the condition with the value of that prop
         for (let prop in data) {
             //check for dates
-            if (data[prop] !== null && NMaker.colTypes[prop] == "date") cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
+            if (data[prop] !== null && this.Maker.colTypes[prop] == "date") cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
 
@@ -569,22 +554,22 @@ class TableMaker {
         }
     }
 
-    makeTable() {
+    makeTable(data) {
         this.table = NMaker.replaceElement(this.attributes.id, "table");
 
-        this.attributes.hide = NMaker.hiddenHeadings;
 
         NMaker.addStylesToElement(this.table, this.attributes.classes.table)
 
         NMaker.dom(this.attributes.parentSelector).appendChild(this.table);
 
+        this.attributes.hide = this.Maker.hiddenHeadings;
         this.generateTableHead();
-        this.generateTableBody();
+        this.generateTableBody(data);
     }
 }
 
 class PaginatorMaker {
-    constructor(attributes = {}) {
+    constructor(Maker, attributes = {}) {
         // Defaults
         this.attributeDefaults = {
             id: "paginatorMaker-" + Date.now(),
@@ -609,28 +594,23 @@ class PaginatorMaker {
             ...attributes.classes
         };
 
-        // Paginator data
+        this.Maker = Maker;
         this.page = 1;
-        this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
-
-        NMaker.paginator = this;
-
-        document.addEventListener("updatedData", (e) => {
-            this.pages = Math.ceil(NMaker.filteredData.length / this.attributes.pageLength);
-            this.page = 1;
-            NMaker.pagedData = this.getPagedData();
-            NMaker.paginator.makePaginator();
-        });
     }
 
     /// produce a new array to prevent mutation
-    getPagedData() {
+    getPagedData(data) {
+        //update pages based on passed in data
+        this.pages = Math.ceil(data.length / this.attributes.pageLength);
+        if (this.page > this.pages) this.page = 1;
+
         let pagedData = [];
         //pages are 1-indexed
         //this.page is the current page, this.attributes.pages is the total number of pages, this.pageLength is the number of entries per page
         for (let i = 0; i < this.attributes.pageLength; i++) {
             let j = (this.page - 1) * this.attributes.pageLength + i;
-            if (j < NMaker.filteredData.length) pagedData[i] = NMaker.filteredData[j];
+            if (j < data.length) pagedData[i] = data[j];
+            else break;
         }
 
         return pagedData;
@@ -650,9 +630,7 @@ class PaginatorMaker {
                 else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = this.pages;
                 else throw new Error("Invalid PaginatorMaker buttons option");
             }
-            NMaker.pagedData = this.getPagedData();
-            document.dispatchEvent(NMaker.updatedPageData);
-            this.updateDisplay();
+            this.Maker.build();
         }, this.attributes.classes.button);
         container.appendChild(prevBtn);
 
@@ -673,9 +651,7 @@ class PaginatorMaker {
                 else if (this.attributes.buttons == NMaker.paginatorOptions.cycle) this.page = 1;
                 else throw new Error("Invalid PaginatorMaker buttons option");
             }
-            NMaker.pagedData = this.getPagedData();
-            document.dispatchEvent(NMaker.updatedPageData);
-            this.updateDisplay();
+            this.Maker.build();
         }, this.attributes.classes.button);
         container.appendChild(nextBtn);
 
@@ -691,9 +667,9 @@ class PaginatorMaker {
         else NMaker.dom(this.attributes.id).hidden = false;
     }
 
-    updateDisplay() {
-        NMaker.dom(this.attributes.id + "-display").innerText = this.getDisplay();
-    }
+    // updateDisplay() {
+    //     NMaker.dom(this.attributes.id + "-display").innerText = this.getDisplay();
+    // }
 
     getDisplay() {
         return this.page + " / " + this.pages;
@@ -701,7 +677,7 @@ class PaginatorMaker {
 }
 
 class FilterMaker {
-    constructor(attributes = {}) {
+    constructor(Maker, attributes = {}) {
         this.attributeDefaults = {
             id: "filter-" + Date.now(),
             parentSelector: "body",
@@ -732,7 +708,7 @@ class FilterMaker {
             useSubFilter: false,
             useMemory: false,
             defaultSettings: {
-                selection: Object.keys(NMaker.data[0])[0],
+                selection: Object.keys(Maker.data[0])[0],
                 option: NMaker.filterOptions.contains,
                 upperValue: "",
                 lowerValue: ""
@@ -756,15 +732,7 @@ class FilterMaker {
 
         this.attributes.defaultSettings = attributes.defaultSettings ?? this.attributeDefaults.defaultSettings;
 
-        //and listen for calls to update
-        document.addEventListener("updatedPageData", (e) => {
-            //create memory from storage or defaults
-            this.setMemoryFromStorage();
-            //build filter
-            this.makeFilter();
-        });
-
-        NMaker.filter = this;
+        this.Maker = Maker;
     }
 
     setMemoryFromStorage() {
@@ -788,7 +756,7 @@ class FilterMaker {
         if (this.attributes.useMemory && this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
                 this.memory[this.filterIds[i]] = {
-                    selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(NMaker.data[0])[0],
+                    selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(this.Maker.data[0])[0],
                     option: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-modifier") ?? NMaker.filterOptions.contains,
                     upperValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-upper-value") ?? "",
                     lowerValue: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-lower-value") ?? ""
@@ -846,12 +814,15 @@ class FilterMaker {
     }
 
     makeNewFilterId() {
-        if(!this.filterIdsNext) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
+        if (!this.filterIdsNext) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
         else this.filterIdsNext++;
         return this.attributes.id + "-" + this.filterIdsNext;
     }
 
     makeFilter() {
+        //create memory from storage or defaults
+        this.setMemoryFromStorage();
+
         //make outer container
         let container = NMaker.replaceElement(this.attributes.id, "div", this.attributes.classes.container);
         //attach container to DOM
@@ -970,7 +941,7 @@ class FilterMaker {
 
                 //make memory entry for that new filter
                 this.memory[this.filterIds[this.filterIds.length - 1]] = {
-                    selection: Object.keys(NMaker.data[0])[0],
+                    selection: Object.keys(this.Maker.data[0])[0],
                     option: NMaker.filterOptions.contains,
                     upperValue: "",
                     lowerValue: ""
@@ -991,21 +962,19 @@ class FilterMaker {
 
         //reset button
         let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
-            //reset data
-            NMaker.resetData();
-
-            //reset cols
-            if (NMaker.hiddenHeadings) NMaker.hiddenHeadings = [...NMaker.initialHiddenHeadings];
-
             //clear sessionStorage of relevant items
             NMaker.clearStorageOfId(this.attributes.id);
+            //hard reset data
+            this.Maker.activeData = this.Maker.initialData;
 
+            //reset cols
+            if (this.Maker.hiddenHeadings) this.Maker.hiddenHeadings = [...this.Maker.initialHiddenHeadings];
             //dispatch events to update filter and table
-            NMaker.build();
+            this.Maker.build(this.Maker.activeData);
         }, this.attributes.classes.button, "Reset table")
         btnControlsContainer.appendChild(resetBtn);
 
-        if (NMaker.hiddenHeadings) {
+        if (this.Maker.hiddenHeadings) {
             //show button, which is a select box whose first option is the btn icon, and whose selections get put into the hiddenHeadings list, the select box itself resetting.
             let showBtn = document.createElement("select");
             showBtn.id = this.attributes.id + "-show";
@@ -1016,16 +985,16 @@ class FilterMaker {
             defaultOption.selected = true;
             showBtn.appendChild(defaultOption);
 
-            for (let heading of NMaker.sort(NMaker.hiddenHeadings, this.attributes.order)) {
+            for (let heading of NMaker.sort(this.Maker.hiddenHeadings, this.attributes.order)) {
                 let opt = document.createElement("option");
                 opt.value = heading;
-                opt.innerText = NMaker.headings[heading];
+                opt.innerText = this.Maker.headings[heading];
                 showBtn.appendChild(opt);
             }
             showBtn.onchange = () => {
-                NMaker.hiddenHeadings = NMaker.hiddenHeadings.filter(h => h !== showBtn.value);
+                this.Maker.hiddenHeadings = this.Maker.hiddenHeadings.filter(h => h !== showBtn.value);
                 showBtn.value = showBtn.firstElementChild.value;
-                NMaker.build();
+                this.Maker.build();
             }
             NMaker.addStylesToElement(showBtn, this.attributes.classes.button);
 
@@ -1082,8 +1051,6 @@ class FilterMaker {
 
     makeSearchBtn() {
         return NMaker.makeBtn(this.attributes.id + "-search", "Search", () => {
-            //reset data to be without filters
-            NMaker.resetData();
 
             //update memory with what's in the filters
             this.setMemoryFromFilters();
@@ -1091,14 +1058,7 @@ class FilterMaker {
             //save memory to storage for rebuild post-search
             this.saveToStorage();
 
-            //use the memory to apply a sequence of filters
-            for (let filter of Object.values(this.memory)) {
-                this.filter(filter.option, filter.selection, filter.lowerValue, filter.upperValue);
-            }
-
-            //dispatch events to update filter and table
-            document.dispatchEvent(NMaker.updatedData);
-            document.dispatchEvent(NMaker.updatedPageData);
+            this.Maker.build();
         }, this.attributes.classes.button, "Search in the table");
     }
 
@@ -1123,15 +1083,15 @@ class FilterMaker {
         let selector = document.createElement("select");
         selector.id = id + "-selector";
         selector.title = "What column to filter by";
-        let headings = NMaker.sort(Object.values(NMaker.headings), this.attributes.order);
+        let headings = NMaker.sort(Object.values(this.Maker.headings), this.attributes.order);
 
         for (let displayHeading of headings) {
-            let heading = Object.keys(NMaker.headings).find(heading => NMaker.headings[heading] === displayHeading);
+            let heading = Object.keys(this.Maker.headings).find(heading => this.Maker.headings[heading] === displayHeading);
             if (this.attributes.ignore && this.attributes.ignore.includes(heading)) continue;
             let opt = document.createElement("option");
             opt.value = heading;
             if (opt.value == this.memory[id].selection) opt.selected = true;
-            opt.innerText = NMaker.headings[heading];
+            opt.innerText = this.Maker.headings[heading];
             selector.appendChild(opt);
         }
         NMaker.addStylesToElement(selector, this.attributes.classes.selector);
@@ -1156,7 +1116,7 @@ class FilterMaker {
         }
 
         //then add options according to selected data type
-        let type = NMaker.colTypes[NMaker.dom(id + "-selector").value];
+        let type = this.Maker.colTypes[NMaker.dom(id + "-selector").value];
 
         switch (type) {
             case "bigint":
@@ -1174,7 +1134,7 @@ class FilterMaker {
                 break;
             case "object":
                 console.warn("Invalid object value found");
-                NMaker.colTypes[NMaker.dom(id + "-selector").value] = "string";
+                this.Maker.colTypes[NMaker.dom(id + "-selector").value] = "string";
                 this.attachOptions(modifier, this.attributes.modifiers.string, NMaker.filterOptions.contains);
                 break;
             case "undefined":
@@ -1224,7 +1184,7 @@ class FilterMaker {
     }
 
     makeSimpleInputGroup(id) {
-        let type = NMaker.colTypes[NMaker.dom(id + "-selector").value];
+        let type = this.Maker.colTypes[NMaker.dom(id + "-selector").value];
 
         //make / remake input group and therefore inputs
         let inputGroup = NMaker.replaceElement(id + "-input-group", "div", this.attributes.classes.inputGroup);
@@ -1307,8 +1267,8 @@ class FilterMaker {
         NMaker.addStylesToElement(input, this.attributes.classes.selector);
 
         let option = NMaker.dom(id + "-selector").value;
-        let options = Array.from(new Set(NMaker.data.map(datum => {
-            if (NMaker.displayValues[option] && datum[option] == NMaker.displayValues[option].value) return NMaker.displayValues[option].displayValue;
+        let options = Array.from(new Set(this.Maker.data.map(datum => {
+            if (this.Maker.displayValues[option] && datum[option] == this.Maker.displayValues[option].value) return this.Maker.displayValues[option].displayValue;
             else return datum[option];
         })));
 
@@ -1330,19 +1290,19 @@ class FilterMaker {
         NMaker.dom(id + "-input-container").appendChild(inputGroup);
     }
 
-    filter(filterOption, col, lowerValue, upperValue = null) {
+    filter(data, filterOption, col, lowerValue, upperValue = null) {
         //Get the correct data for the filter to filter by input or input group
         let prop = col;
         let lowerInputValue = lowerValue;
         let upperInputValue = upperValue;
 
         //correct input display value to actual data values
-        if (NMaker.displayValues[prop] && lowerInputValue == NMaker.displayValues[prop].displayValue) lowerInputValue = NMaker.displayValues[prop].value;
+        if (this.Maker.displayValues[prop] && lowerInputValue == this.Maker.displayValues[prop].displayValue) lowerInputValue = this.Maker.displayValues[prop].value;
 
         //new filtered data to fill in empty array
         let filteredData = [];
 
-        for (let row of NMaker.filteredData) {
+        for (let row of data) {
             //little null catching trickery
             if (row[prop] == null || lowerInputValue == null) {
                 if (row[prop] == null && (lowerInputValue == null || filterOption == NMaker.filterOptions.empty)) filteredData.push(row);
@@ -1411,7 +1371,6 @@ class FilterMaker {
             }
         }
 
-        NMaker.filteredData = filteredData;
-        NMaker.pagedData = filteredData;
+        return filteredData;
     }
 }
