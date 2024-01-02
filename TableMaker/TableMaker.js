@@ -770,6 +770,7 @@ class FilterMaker {
         } else {
             //storage memory should override defaults, but if none are found those defaults need to be kept.
             this.initiateMemory();
+            this.saveToStorage();
         }
     }
 
@@ -799,7 +800,7 @@ class FilterMaker {
 
     getNextFilterId() {
         //this method should be the only way to handle getting this.filterIdsNext so that this is properly contained to avoid issues
-        if (!this.filterIdsNext) {
+        if (!this.hasOwnProperty('filterIdsNext')) {
             this.filterIdsNext = 0;
 
             //if using memory get next filter id after stored ids, if such exist
@@ -814,7 +815,8 @@ class FilterMaker {
     }
 
     makeNewFilterId() {
-        if (!this.filterIdsNext) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
+        //fun fact, if this.filterIdsNext is 0 then !this.filterIdsNext is also true, so this is not the "present" check I thought it was
+        if (!this.hasOwnProperty('filterIdsNext')) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
         else this.filterIdsNext++;
         return this.attributes.id + "-" + this.filterIdsNext;
     }
