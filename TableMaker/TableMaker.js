@@ -231,9 +231,12 @@ class Maker {
         this.hiddenHeadings = false;
         this.initialHiddenHeadings = false;
         this.showHeadings = null;
+        this.hide = false;
+        this.noHide = false;
 
         //initial hidden headings as set by attributes
         this.hiddenHeadings = attributes.hide ? attributes.hide : false;
+        this.noHide = attributes.noHide ? attributes.noHide : false;
 
         //if using hide "all" and show attribute, calculate the hiddenHeadings
         if (this.hiddenHeadings && this.hiddenHeadings.includes("all") && attributes.show) {
@@ -422,7 +425,7 @@ class TableMaker {
             }
 
             //hide btn
-            if (this.Maker.hiddenHeadings) {
+            if (this.Maker.hiddenHeadings && (this.Maker.noHide ? !this.Maker.noHide.includes(heading) : true)) {
                 let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
                     this.Maker.hiddenHeadings.push(heading);
                     this.Maker.build();
@@ -461,63 +464,67 @@ class TableMaker {
         return content;
     }
 
-    generateRow(tbody, data, classes) {
+    generateRow(tbody, rowData, classes) {
         let tr = tbody.insertRow();
 
-        for (let key in data) {
-            if (this.attributes.hide && this.attributes.hide.includes(key)) continue;
+        for (let prop in rowData) {
+            if (this.attributes.hide && this.attributes.hide.includes(prop)) continue;
 
             let td = document.createElement("td");
 
             NMaker.addStylesToElement(td, classes);
 
             //FORMAT DATA
-            let content = data[key];
+            let cellData = rowData[prop];
 
             //check if displayValues exist for key
-            if (this.Maker.displayValues.hasOwnProperty(key)) {
-                if (Array.isArray(this.Maker.displayValues[key])) {
-                    for (let dv of this.Maker.displayValues[key]) {
-                        content = this.getDisplayValue(dv, content, data, key);
+            if (this.Maker.displayValues.hasOwnProperty(prop)) {
+                if (Array.isArray(this.Maker.displayValues[prop])) {
+                    for (let dv of this.Maker.displayValues[prop]) {
+                        cellData = this.getDisplayValue(dv, cellData, rowData, prop);
                     }
                 } else {
-                    content = this.getDisplayValue(this.Maker.displayValues[key], content, data, key);
+                    cellData = this.getDisplayValue(this.Maker.displayValues[prop], cellData, rowData, prop);
                 }
             }
 
             //Date
-            if (content instanceof Date) content = document.createTextNode(content.toLocaleDateString());
+            if (cellData instanceof Date) cellData = document.createTextNode(cellData.toLocaleDateString());
 
             //Currency
-            else if (this.attributes.currency && this.attributes.currency.includes(key)) {
+            else if (this.attributes.currency && this.attributes.currency.includes(prop)) {
                 const formatter = new Intl.NumberFormat('en-UK', {
                     style: 'currency',
                     currency: 'GBP',
                 });
-                content = document.createTextNode(formatter.format(content));
+                cellData = document.createTextNode(formatter.format(cellData));
             }
 
             //Link
-            else if (this.attributes.link && this.attributes.link.hasOwnProperty(key)) {
-                let linkData = this.attributes.link[key];
-                content = NMaker.makeLink(linkData, content, this.attributes.classes.link);
+            else if (this.attributes.link && this.attributes.link.hasOwnProperty(prop)) {
+                let linkData = this.attributes.link[prop];
+                //if linkData is the name of another property, use the data in there instead for variable link text
+                for (let otherProp in rowData) {
+                    if (linkData.includes(otherProp) && otherProp !== prop) linkData = linkData.replace(otherProp, rowData[otherProp]);
+                }
+                cellData = NMaker.makeLink(linkData, cellData, this.attributes.classes.link);
             }
             else {
-                content = document.createTextNode(content);
+                cellData = document.createTextNode(cellData);
             }
 
-            td.appendChild(content);
+            td.appendChild(cellData);
 
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
             // TODO Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
-            if (this.attributes.conditionalClasses.hasOwnProperty(key)) {
-                if (Array.isArray(this.attributes.conditionalClasses[key])) {
-                    for (let cc of this.attributes.conditionalClasses[key]) {
-                        this.addConditionalClass(data, tr, td, { ...cc });
+            if (this.attributes.conditionalClasses.hasOwnProperty(prop)) {
+                if (Array.isArray(this.attributes.conditionalClasses[prop])) {
+                    for (let cc of this.attributes.conditionalClasses[prop]) {
+                        this.addConditionalClass(rowData, tr, td, { ...cc });
                     }
                 }
-                else this.addConditionalClass(data, tr, td, { ...this.attributes.conditionalClasses[key] });
+                else this.addConditionalClass(rowData, tr, td, { ...this.attributes.conditionalClasses[prop] });
             }
 
             tr.appendChild(td);
@@ -1320,7 +1327,11 @@ class FilterMaker {
                     if (row[prop] == lowerValue) filteredData.push(row);
                     break;
                 case NMaker.filterOptions.date:
-                    if (Date.parse(row[prop]) == Date.parse(lowerInputValue)) filteredData.push(row);
+                    let rowDate = new Date(row[prop]);
+                    let searchDate = new Date(lowerInputValue);
+                    if (rowDate.getFullYear() === searchDate.getFullYear() &&
+                        rowDate.getMonth() === searchDate.getMonth() &&
+                        rowDate.getDate() === searchDate.getDate()) filteredData.push(row);
                     break;
                 case NMaker.filterOptions.match:
                 case NMaker.filterOptions.equals:

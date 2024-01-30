@@ -173,7 +173,8 @@
                 },
                 //hide: ["about", "renting", "address"]
                 hide: ["all"],
-                show: ["balance", "age", "eyeColor", "name", "gender", "address", "registered", "renting"]
+                show: ["balance", "age", "eyeColor", "name", "gender", "address", "registered", "renting"],
+                noHide: ["renting"]
             });
 
             tailored.makePaginator({
@@ -192,7 +193,7 @@
                 noSorting: ["picture", "renting"],
                 currency: ["balance"],
                 link: {
-                    picture: "See picture"
+                    picture: "See name's picture"
                 },
                 conditionalClasses: {
                     gender: {
