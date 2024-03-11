@@ -1611,8 +1611,8 @@ class UpdaterMaker {
         label.innerText = labelText;
         selectContainer.appendChild(label);
 
+        //and the select box itself
         let select = this.makeBasicInput(key, name, attributes, defaultVal, "select");
-
         let type = typeof options[0];
         let valType;
         if (type == "object") valType = typeof options[0].value;
