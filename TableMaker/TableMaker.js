@@ -74,7 +74,7 @@ class NMaker {
         return /(?=.*?\d)^£?(([1-9]\d{0,2}(,\d{3})*)|\d+)?(\.\d{1,2})?$/.test(data);
     }
 
-    static IsCompatible(data) {
+    static isCompatible(data) {
         if (!Array.isArray(data)) {
             console.error("Data is not an array");
             return false;
@@ -119,6 +119,14 @@ class NMaker {
 
     static sort(data, sortOrder) {
         return data.slice().sort((a, b) => NMaker.compare(sortOrder, a, b));
+    }
+
+    static range(lower, upper, step = 1) {
+        let arr = []
+        for (let i = lower; i <= upper; i += step) {
+            arr.push(i);
+        }
+        return arr;
     }
 
     static addStylesToElement(el, styles) {
@@ -228,11 +236,19 @@ class NMaker {
             }
         }
     }
+
+    //A convenience wrapper when you wish to build an updater from a blueprint and not bother with other Maker capabilities
+    static makeUpdater(blueprint, attributes) {
+        let maker = new Maker([blueprint]);
+        maker.makeUpdater(attributes);
+        maker.build();
+        return;
+    }
 }
 
 class Maker {
     constructor(data, attributes = {}) {
-        if (!NMaker.IsCompatible(data)) throw new Error("No or invalid JSON provided");
+        if (!NMaker.isCompatible(data)) throw new Error("No or invalid JSON provided");
 
         this.activeData = [...data];
         this.initialData = Object.freeze(data);
@@ -322,7 +338,7 @@ class Maker {
             this.table.makeTable(this.activeData);
         }
 
-        if(this.updater) {
+        if (this.updater) {
             this.updater.makeUpdater();
         }
 
@@ -1439,11 +1455,13 @@ class UpdaterMaker {
     - names (for posting, defaults to pascal case),
     - labels (defaults to none)
     - attributes by prop with each having an object of attribute-value pairs
+    - selections is an object of key - arrays where the key is the input that'll be a selection, and the array is of like-type values that are the options of the selection
 
     that generates clean html ouput of a headered section with appropriate label-input pairs for given data structure
     */
 
     constructor(Maker, attributes) {
+        // the blueprint is the pojo that will be used to generate the inputs desired, change that and change how updater maker works
         let initial = attributes.blueprint ? attributes.blueprint : Maker.data[0];
         this.attributeDefaults = {
             id: "updater-" + Date.now(),
@@ -1453,14 +1471,16 @@ class UpdaterMaker {
                 title: ["h3"],
                 form: [],
                 input: ["form-control"],
+                select: ["form-control"],
                 inputContainer: ["input-group"],
                 button: ["btn", "btn-sm", "btn-danger", "float-end"],
                 label: ["input-group-text"],
                 checkbox: ["form-check-input"]
             },
-            // the blueprint is the pojo that will be used to generate the inputs desired, change that and change how updater maker works
             blueprint: initial,
             title: "Updater",
+            hideTitle: false,
+            titleParentSelector: false,
             endpoint: "undefined",
             submitText: "Submit",
             primaryKey: Object.keys(initial)[0],
@@ -1468,6 +1488,7 @@ class UpdaterMaker {
             inputTypes: this.objKeysAndTypes(initial),
             names: this.objKeysAndPascalkeys(initial),
             labels: this.objKeysAndCapitalisedkeys(initial),
+            selections: false,
             ignore: [],
             defaults: initial,
             attributes: {}
@@ -1479,7 +1500,7 @@ class UpdaterMaker {
         }
 
         let defaults = ["classes", "inputTypes", "names", "labels", "defaults"];
-        for(let def of defaults) {
+        for (let def of defaults) {
             this.attributes[def] = {
                 ...this.attributeDefaults[def],
                 ...attributes[def]
@@ -1516,10 +1537,14 @@ class UpdaterMaker {
         let updaterContainer = NMaker.replaceElement(this.attributes.id, "div", this.attributes.classes.container);
 
         //title
-        let title = document.createElement("h3");
-        NMaker.addStylesToElement(title, this.attributes.classes.title);
-        title.innerText = this.attributes.title;
-        updaterContainer.appendChild(title);
+        if (!this.attributes.hideTitle) {
+            let title = NMaker.replaceElement(this.attributes.id + "-title", "h3", this.attributes.classes.title);
+            title.innerText = this.attributes.title;
+            if (this.attributes.titleParentSelector) {
+                NMaker.dom(this.attributes.titleParentSelector).appendChild(title);
+            }
+            else updaterContainer.appendChild(title);
+        }
 
         //form
         let form = document.createElement("form");
@@ -1531,14 +1556,27 @@ class UpdaterMaker {
         for (let key in this.attributes.blueprint) {
             if (this.attributes.ignore.includes(key)) continue;
 
-            form.appendChild(this.makeInput(
+            let input;
+            if (this.attributes.selections[key]) {
+                input = this.makeSelection(
+                    key,
+                    this.attributes.selections[key],
+                    this.attributes.labels[key],
+                    this.attributes.names[key],
+                    this.attributes.attributes[key],
+                    this.attributes.defaults[key]
+                );
+            }
+            else input = this.makeInput(
                 key,
                 this.attributes.inputTypes[key],
                 this.attributes.labels[key],
                 this.attributes.names[key],
                 this.attributes.attributes[key],
                 this.attributes.defaults[key]
-            ));
+            )
+
+            form.appendChild(input);
         }
 
         //add submit button
@@ -1551,6 +1589,55 @@ class UpdaterMaker {
         updaterContainer.appendChild(form);
 
         NMaker.dom(this.attributes.parentSelector).appendChild(updaterContainer);
+    }
+
+    makeSelection(key, options, labelText, name, attributes, defaultVal) {
+        if (!Array.isArray(options)) throw new Error("UpdaterMaker makeSelection called with non array: " + options);
+        if (options.length == 0) throw new Error("UpdaterMaker makeSelection options array is empty.");
+        if ((typeof options[0] !== 'object' && !options.includes(defaultVal)) || 
+            (typeof options[0] == 'object' && !options.map(opt => opt.text).includes(defaultVal))) {
+            throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given options");
+        }
+
+        //select container
+        let selectContainer = document.createElement("div");
+        selectContainer.id = this.idForInput(key) + "-container";
+        NMaker.addStylesToElement(selectContainer, this.attributes.classes.inputContainer);
+
+        //label
+        let label = document.createElement("label");
+        label.id = this.idForInput(key) + "-label";
+        NMaker.addStylesToElement(label, this.attributes.classes.label);
+        label.innerText = labelText;
+        selectContainer.appendChild(label);
+
+        let select = this.makeBasicInput(key, name, attributes, defaultVal, "select");
+
+        let type = typeof options[0];
+        let valType;
+        if (type == "object") valType = typeof options[0].value;
+
+        for (let opt of options) {
+            if (typeof opt !== type || (valType && typeof opt.value !== valType)) {
+                throw new Error("UpdaterMaker makeSelection, not all options of passed in array of the same type " + type);
+            }
+
+            let option = document.createElement("option");
+            if(valType) {
+                option.value = opt.value;
+                option.innerText = opt.text;
+            }
+            else option.innerText = opt;
+            select.appendChild(option);
+        }
+
+        //can't set selection values until after options are added
+        if(typeof options[0] == "object") defaultVal = options.filter(opt => opt.text == defaultVal)[0].value;
+        select.value = defaultVal;
+
+        selectContainer.appendChild(select);
+
+        return selectContainer;
     }
 
     makeInput(key, type, labelText, name, attributes, defaultVal) {
@@ -1595,9 +1682,9 @@ class UpdaterMaker {
                 break;
         }
 
-        if(this.attributes.primaryKey == key) {
+        if (this.attributes.primaryKey == key) {
             input.readOnly = true;
-            if(this.attributes.showPrimaryKey == false) {
+            if (this.attributes.showPrimaryKey == false) {
                 input.hidden = true;
                 inputContainer.classList.add("hidden");
                 inputContainer.hidden = true;
@@ -1610,9 +1697,9 @@ class UpdaterMaker {
         return inputContainer;
     }
 
-    makeBasicInput(key, name, attributes, defaultVal) {
-        let input = document.createElement("input");
-        NMaker.addStylesToElement(input, this.attributes.classes.input)
+    makeBasicInput(key, name, attributes, defaultVal, element = "input") {
+        let input = document.createElement(element);
+        NMaker.addStylesToElement(input, this.attributes.classes[element])
         input.id = this.idForInput(key);
         input.name = name;
         input.value = defaultVal;
@@ -1620,12 +1707,6 @@ class UpdaterMaker {
             input[attr] = attributes[attr];
         }
         return input;
-    }
-
-    makeCheckbox(key, name, attributes, defaultVal) {
-        let checkbox = document.createElement("input");
-
-
     }
 
     idForInput(key) {

@@ -58,6 +58,7 @@
             </code>
         </div>
         <div class="col-4">
+            <div id="updater-edit-title-container"></div>
             <select class="form-control" onchange="updater(this.value - 1)">
                 <option>1</option>
                 <option>2</option>
@@ -112,7 +113,8 @@
                 DOBDay: 1,
                 DOBMonth: 1,
                 DOBYear: 1999,
-                IsAdmin: false
+                Subscribed: false,
+                Role: "Office"
             },
             showPrimaryKey: true,
             classes: {
@@ -127,6 +129,15 @@
                 DOBYear: "number",
             },
             ignore: ["DOBDay", "DOBMonth"],
+            selections: {
+                DOBYear: NMaker.range(1990,2024),
+                Role: [
+                    {value: 1, text: "Store"},
+                    {value: 2, text: "Office"},
+                    {value: 3, text: "Sales"},
+                    {value: 4, text: "Super"}
+                ]
+            },
             defaults: {
                 FirstName: "",
                 LastName: "",
@@ -146,21 +157,27 @@
 
         updater(0);
         function updater(index) {
-            let updaterEdit = new Maker([data[index]]);
-            updaterEdit.makeUpdater({
-                id:"edit-demo",
-                parentSelector:"updater-maker-demo-2",
+            NMaker.makeUpdater(data[index], {
+                id: "edit-demo",
+                parentSelector: "updater-maker-demo-2",
                 showPrimaryKey: true,
                 title: "Update Existing",
+                titleParentSelector: "updater-edit-title-container",
                 classes: {
                     checkbox: ["scale-1p5"]
                 },
                 inputTypes: {
                     dob: "date"
                 },
+                attributes: {
+                    age: {
+                        step: 1,
+                        min: 0,
+                        max: 99
+                    }
+                },
                 submitText: "Update"
             });
-            updaterEdit.build();
         }
     </script>
 </body>
