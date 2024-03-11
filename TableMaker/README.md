@@ -13,22 +13,15 @@ The objects create their corresponding HTML immediately, but calling `[component
 
 The styling defaults make plentiful use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS classes can be used).
 
-- [NMaker Utilities](#nmaker-utilities)
-    - [Data Attributes](#data-attributes)
-    - [Common Attributes](#common-attributes)
-    - [Given tabular JSON](#given-tabular-json)
-    - [When called (with optional options)](#when-called-with-optional-options)
-    - [Then a Table is made](#then-a-table-is-made)
-    - [Ideas:](#ideas)
-  - [TableMaker](#tablemaker)
-    - [TableMaker API](#tablemaker-api)
-  - [PaginatorMaker](#paginatormaker)
-    - [API](#api)
-  - [FilterMaker](#filtermaker)
-    - [Selector](#selector)
-    - [Modifier](#modifier)
-    - [Input](#input)
-    - [API](#api-1)
+- [TableMaker](#tablemaker)
+  - [TableMaker API](#tablemaker-api)
+- [PaginatorMaker](#paginatormaker)
+  - [API](#api)
+- [FilterMaker](#filtermaker)
+  - [Selector](#selector)
+  - [Modifier](#modifier)
+  - [Input](#input)
+  - [API](#api-1)
 
 
 ### Data Attributes
@@ -63,10 +56,7 @@ All componenets make use of the following attributes:
 
 ### Ideas:
  - DropDownMaker - makes a dropdown list from given options (currently a hardcoded part of `filterMaker`)
- - PrintMaker - makes a print button that takes in the id of the div to print
  - DynamicTextInputMaker - name tbc, but a text input whose size updates according to the amount of text input so you never lose track of what you're writing.
- - Loop Around option for paginator
- - dynamic hide/show headings (a select box of checkboxes)
 
 ## TableMaker
 The main component of `NMaker`.

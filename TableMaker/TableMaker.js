@@ -31,6 +31,8 @@ class NMaker {
         dateReverse: "Date-reverse"
     });
 
+    static buildEvent = new Event("build");
+
     static dom(queryString) {
         //just a shorter and slightly more flexible utility for getting DOM element/s, accepts id's as plain strings or css style selectors, and only returns a nodelist if multiple matches are found
 
@@ -52,10 +54,19 @@ class NMaker {
         return str !== null && (new Date(str) !== "Invalid Date") && !isNaN(new Date(str));
     }
 
+    //courtesy of https://stackoverflow.com/questions/63116039/camelcase-to-kebab-case
+    static toKebabCase(str) {
+        return str.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? "-" : "") + $.toLowerCase())
+    }
+
     //courtesy of https://stackoverflow.com/questions/21147832/convert-camel-case-to-human-readable-string
     static toCapitalizedWords(name) {
         var words = name.match(/[A-Za-z][a-z]*|[0-9]+/g) || [];
         return words.map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(" ");
+    }
+
+    static toPascalCase(str) {
+        return str.replace(/\w+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).replaceAll(" ", "");
     }
 
     //courtesy of https://stackoverflow.com/questions/16242449/regex-currency-validation
@@ -289,24 +300,37 @@ class Maker {
         this.paginator = new PaginatorMaker(this, attributes);
     }
 
-    build(data = null) {
-        if (!this.table) throw new Error("Cannot build without first calling makeTable to generate an instance of TableMaker.");
-
-        //reset active data
-        if (data) this.activeData = data;
-        else this.activeData = this.getActiveData();
-
-        if (this.filter) this.filter.makeFilter();
-
-        if (this.paginator) {
-            this.activeData = this.paginator.getPagedData(this.activeData);
-            this.paginator.makePaginator();
-        }
-
-        this.table.makeTable(this.activeData);
+    makeUpdater(attributes = {}) {
+        this.updater = new UpdaterMaker(this, attributes);
     }
 
-    getActiveData() {
+    build(data = null) {
+        if (!this.table && !this.updater) throw new Error("Cannot build without either an instance of TableMaker or UpdaterMaker");
+
+        if (this.table) {
+            //reset active data
+            if (data) this.activeData = data;
+            else this.activeData = this.getFilteredData();
+
+            if (this.filter) this.filter.makeFilter();
+
+            if (this.paginator) {
+                this.activeData = this.paginator.getPagedData(this.activeData);
+                this.paginator.makePaginator();
+            }
+
+            this.table.makeTable(this.activeData);
+        }
+
+        if(this.updater) {
+            this.updater.makeUpdater();
+        }
+
+        //to allow for external elements to hook into rebuild events, fire a rebuild event
+        document.dispatchEvent(NMaker.buildEvent);
+    }
+
+    getFilteredData() {
         let data = this.data;
 
         if (this.filter) {
@@ -584,8 +608,10 @@ class PaginatorMaker {
             pageLength: 50,
             classes: {
                 container: ["navbar", "navbar-expand-sm"],
+                displayContainer: ["flex"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
-                p: ["navbar-brand", "mx-2"]
+                p: ["navbar-brand", "mx-2", "my-0", "text-center"],
+                small: ["w-100", "small", "text-center"]
             },
             buttons: NMaker.paginatorOptions.bookend
         };
@@ -642,12 +668,7 @@ class PaginatorMaker {
         container.appendChild(prevBtn);
 
         //create current page display
-        let pageDisplay = document.createElement("p");
-        pageDisplay.id = this.attributes.id + "-display";
-        let pageDisplayText = document.createTextNode(this.getDisplay());
-        NMaker.addStylesToElement(pageDisplay, this.attributes.classes.p);
-        pageDisplay.style.margin = "0";
-        pageDisplay.appendChild(pageDisplayText);
+        let pageDisplay = this.getDisplay();
         container.appendChild(pageDisplay);
 
         //next button
@@ -674,12 +695,25 @@ class PaginatorMaker {
         else NMaker.dom(this.attributes.id).hidden = false;
     }
 
-    // updateDisplay() {
-    //     NMaker.dom(this.attributes.id + "-display").innerText = this.getDisplay();
-    // }
-
     getDisplay() {
-        return this.page + " / " + this.pages;
+        //get text
+        let mainDisplay = document.createTextNode(`Page ${this.page} / ${this.pages}`);
+        let subDisplay = document.createTextNode(`(${this.Maker.activeData.length} row${this.Maker.activeData.length != 1 ? "s" : ""})`);
+        //create html structure & apply styles
+        let container = document.createElement("div");
+        container.id = this.attributes.id + "-display";
+        NMaker.addStylesToElement(container, this.attributes.classes.displayContainer);
+        let pMain = document.createElement("p");
+        NMaker.addStylesToElement(pMain, this.attributes.classes.p);
+        pMain.appendChild(mainDisplay);
+        let pSub = document.createElement("p");
+        NMaker.addStylesToElement(pSub, this.attributes.classes.small);
+        pSub.appendChild(subDisplay);
+
+        container.appendChild(pMain);
+        container.appendChild(pSub);
+
+        return container;
     }
 }
 
@@ -1188,12 +1222,17 @@ class FilterMaker {
                 else console.error("Invalid object value found");
                 return;
             default:
-                throw new Error();
+                console.warn("No valid type identified for " + value + ", assuming string.")
+                return NMaker.filterOptions.contains;
         }
     }
 
     makeSimpleInputGroup(id) {
         let type = this.Maker.colTypes[NMaker.dom(id + "-selector").value];
+        if (type == undefined) {
+            this.Maker.colTypes[NMaker.dom(id + "-selector").value] = "string";
+            type = "string"
+        }
 
         //make / remake input group and therefore inputs
         let inputGroup = NMaker.replaceElement(id + "-input-group", "div", this.attributes.classes.inputGroup);
@@ -1235,6 +1274,7 @@ class FilterMaker {
                 console.error("Invalid object value found, did you define correct colTypes?");
                 break;
             default:
+                console.warn("Invalid type " + type + " found.");
                 throw new Error();
         }
 
@@ -1385,5 +1425,210 @@ class FilterMaker {
         }
 
         return filteredData;
+    }
+}
+
+class UpdaterMaker {
+    /*
+    Taking the Maker data and generate a form to enable Create Update or Delete
+
+    and a config with sections; 
+    - primaryKey, 
+    - show primary key - whether to show it
+    - inputtypes (by data prop), 
+    - names (for posting, defaults to pascal case),
+    - labels (defaults to none)
+    - attributes by prop with each having an object of attribute-value pairs
+
+    that generates clean html ouput of a headered section with appropriate label-input pairs for given data structure
+    */
+
+    constructor(Maker, attributes) {
+        let initial = attributes.blueprint ? attributes.blueprint : Maker.data[0];
+        this.attributeDefaults = {
+            id: "updater-" + Date.now(),
+            parentSelector: "body",
+            classes: {
+                container: ["row"],
+                title: ["h3"],
+                form: [],
+                input: ["form-control"],
+                inputContainer: ["input-group"],
+                button: ["btn", "btn-sm", "btn-danger", "float-end"],
+                label: ["input-group-text"],
+                checkbox: ["form-check-input"]
+            },
+            // the blueprint is the pojo that will be used to generate the inputs desired, change that and change how updater maker works
+            blueprint: initial,
+            title: "Updater",
+            endpoint: "undefined",
+            submitText: "Submit",
+            primaryKey: Object.keys(initial)[0],
+            showPrimaryKey: false,
+            inputTypes: this.objKeysAndTypes(initial),
+            names: this.objKeysAndPascalkeys(initial),
+            labels: this.objKeysAndCapitalisedkeys(initial),
+            ignore: [],
+            defaults: initial,
+            attributes: {}
+        };
+
+        this.attributes = {
+            ...this.attributeDefaults,
+            ...attributes
+        }
+
+        let defaults = ["classes", "inputTypes", "names", "labels", "defaults"];
+        for(let def of defaults) {
+            this.attributes[def] = {
+                ...this.attributeDefaults[def],
+                ...attributes[def]
+            };
+        }
+
+        this.Maker = Maker;
+    }
+
+    //dang you gotta love the j-scrip
+    objKeysAndTypes(obj) {
+        return Object.keys(obj).reduce((okt, prop) => {
+            okt[prop] = typeof obj[prop];
+            return okt;
+        }, {});
+    }
+
+    objKeysAndPascalkeys(obj) {
+        return Object.keys(obj).reduce((okp, prop) => {
+            okp[prop] = NMaker.toPascalCase(prop);
+            return okp;
+        }, {});
+    }
+
+    objKeysAndCapitalisedkeys(obj) {
+        return Object.keys(obj).reduce((okc, prop) => {
+            okc[prop] = NMaker.toCapitalizedWords(prop);
+            return okc;
+        }, {});
+    }
+
+    makeUpdater() {
+        //container
+        let updaterContainer = NMaker.replaceElement(this.attributes.id, "div", this.attributes.classes.container);
+
+        //title
+        let title = document.createElement("h3");
+        NMaker.addStylesToElement(title, this.attributes.classes.title);
+        title.innerText = this.attributes.title;
+        updaterContainer.appendChild(title);
+
+        //form
+        let form = document.createElement("form");
+        NMaker.addStylesToElement(form, this.attributes.classes.form);
+        form.method = "post";
+        form.action = this.attributes.endpoint;
+
+        //each key's input
+        for (let key in this.attributes.blueprint) {
+            if (this.attributes.ignore.includes(key)) continue;
+
+            form.appendChild(this.makeInput(
+                key,
+                this.attributes.inputTypes[key],
+                this.attributes.labels[key],
+                this.attributes.names[key],
+                this.attributes.attributes[key],
+                this.attributes.defaults[key]
+            ));
+        }
+
+        //add submit button
+        let submitBtn = document.createElement("input");
+        submitBtn.type = "submit";
+        submitBtn.value = this.attributes.submitText;
+        NMaker.addStylesToElement(submitBtn, this.attributes.classes.button);
+        form.appendChild(submitBtn);
+
+        updaterContainer.appendChild(form);
+
+        NMaker.dom(this.attributes.parentSelector).appendChild(updaterContainer);
+    }
+
+    makeInput(key, type, labelText, name, attributes, defaultVal) {
+        //input container
+        let inputContainer = document.createElement("div");
+        inputContainer.id = this.idForInput(key) + "-container";
+        NMaker.addStylesToElement(inputContainer, this.attributes.classes.inputContainer);
+
+        //label
+        let label = document.createElement("label");
+        label.id = this.idForInput(key) + "-label";
+        NMaker.addStylesToElement(label, this.attributes.classes.label);
+        label.innerText = labelText;
+
+        //switch on type
+        let input = this.makeBasicInput(key, name, attributes, defaultVal);
+        switch (type) {
+            case "string":
+            case "text":
+                input.type = "text";
+                break;
+
+            case "number":
+            case "bigint":
+                input.type = "number";
+                break;
+
+            case "date":
+                input.type = "date";
+                break;
+
+            case "checkbox":
+            case "boolean":
+                input.type = "checkbox";
+                input.checked = String(defaultVal) == "true";
+                input.classList.remove(...input.classList);
+                NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
+                break;
+
+            default:
+                console.warn("Invalid type " + type + " passed to UpdaterMaker makeInput()");
+                break;
+        }
+
+        if(this.attributes.primaryKey == key) {
+            input.readOnly = true;
+            if(this.attributes.showPrimaryKey == false) {
+                input.hidden = true;
+                inputContainer.classList.add("hidden");
+                inputContainer.hidden = true;
+            }
+        }
+
+        inputContainer.appendChild(label);
+        inputContainer.appendChild(input);
+
+        return inputContainer;
+    }
+
+    makeBasicInput(key, name, attributes, defaultVal) {
+        let input = document.createElement("input");
+        NMaker.addStylesToElement(input, this.attributes.classes.input)
+        input.id = this.idForInput(key);
+        input.name = name;
+        input.value = defaultVal;
+        for (let attr in attributes) {
+            input[attr] = attributes[attr];
+        }
+        return input;
+    }
+
+    makeCheckbox(key, name, attributes, defaultVal) {
+        let checkbox = document.createElement("input");
+
+
+    }
+
+    idForInput(key) {
+        return this.attributes.id + "-" + NMaker.toKebabCase(key);
     }
 }

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UpdaterMaker</title>
+    <script src="TableMaker.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <style>
+        input:invalid {
+            border: 2px dashed red;
+        }
+
+        .scale-1p5 {
+            transform: scale(2);
+            /* Double-sized Checkboxes */
+            -ms-transform: scale(2);
+            /* IE */
+            -moz-transform: scale(2);
+            /* FF */
+            -webkit-transform: scale(2);
+            /* Safari and Chrome */
+            -o-transform: scale(2);
+
+            /* Opera */
+            padding: 10px;
+
+            margin-left: 1rem !important;
+        }
+    </style>
+</head>
+
+<body class="container">
+    <h1>UpdaterMaker Demo</h1>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-4">
+            <code style="white-space: pre-line;">
+                [{
+                    id:123,
+                    name:"Peter",
+                    age: 30,
+                    dob: "1993-09-30"
+                },
+                {
+                    id:124,
+                    name:"Sayaka",
+                    age: 26,
+                    dob: "1997-08-28"
+                }]
+            </code>
+        </div>
+        <div class="col-4">
+            <select class="form-control" onchange="updater(this.value - 1)">
+                <option>1</option>
+                <option>2</option>
+                <option>3</option>
+            </select>
+            <div id="updater-maker-demo-2"></div>
+        </div>
+        <div class="col-4">
+            <div id="updater-maker-demo"></div>
+        </div>
+    </div>
+
+    <script>
+        let data = [{
+            id: 123,
+            name: "Peter",
+            age: 30,
+            dob: "1993-09-30",
+            subscribed: true
+        },
+        {
+            id: 124,
+            name: "Sayaka",
+            age: 26,
+            dob: "1997-08-28",
+            subscribed: false
+        },
+        {
+            id: 125,
+            name: "Michael",
+            age: 60,
+            dob: "1963-08-08",
+            subscribed: true
+        }
+        ];
+
+        NMaker.dom('code').innerText = JSON.stringify(data, null, 2);
+
+        let updaterNew = new Maker([{}]);
+
+        updaterNew.makeUpdater({
+            id: "updater-demo",
+            parentSelector: "updater-maker-demo",
+            title: "New (from blueprint)",
+            endpoint: "./",
+
+            blueprint: {
+                identity: 123456789,
+                FirstName: "John",
+                LastName: "Smith",
+                Age: 0,
+                DOBDay: 1,
+                DOBMonth: 1,
+                DOBYear: 1999,
+                IsAdmin: false
+            },
+            showPrimaryKey: true,
+            classes: {
+                checkbox: ["scale-1p5"]
+            },
+            labels: {
+                DOBDay: "D.O.B. (day)",
+                DOBMonth: "D.O.B. (month)",
+                DOBYear: "D.O.B. (year)",
+            },
+            inputTypes: {
+                DOBYear: "number",
+            },
+            ignore: ["DOBDay", "DOBMonth"],
+            defaults: {
+                FirstName: "",
+                LastName: "",
+                Age: 18,
+                DOBYear: new Date().getFullYear()
+            },
+            attributes: {
+                Age: {
+                    step: 1,
+                    min: 0,
+                    max: 99
+                }
+            },
+            submitText: "Create new"
+        });
+        updaterNew.build();
+
+        updater(0);
+        function updater(index) {
+            let updaterEdit = new Maker([data[index]]);
+            updaterEdit.makeUpdater({
+                id:"edit-demo",
+                parentSelector:"updater-maker-demo-2",
+                showPrimaryKey: true,
+                title: "Update Existing",
+                classes: {
+                    checkbox: ["scale-1p5"]
+                },
+                inputTypes: {
+                    dob: "date"
+                },
+                submitText: "Update"
+            });
+            updaterEdit.build();
+        }
+    </script>
+</body>
+
+</html>
