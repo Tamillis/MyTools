@@ -65,9 +65,16 @@ class NMaker {
         return words.map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(" ");
     }
 
-    static toPascalCase(str) {
-        return str.replace(/\w+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).replaceAll(" ", "");
-    }
+    //couresy of https://stackoverflow.com/questions/4068573/convert-string-to-pascal-case-aka-uppercamelcase-in-javascript
+    static toPascalCase (str) {
+        if (/^[\p{L}\d]+$/iu.test(str)) {
+          return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        return str.replace(
+          /([\p{L}\d])([\p{L}\d]*)/giu,
+          (g0, g1, g2) => g1.toUpperCase() + g2.toLowerCase()
+        ).replace(/[^\p{L}\d]/giu, '');
+      }
 
     //courtesy of https://stackoverflow.com/questions/16242449/regex-currency-validation
     static isPoundCurrency(data) {
@@ -292,6 +299,7 @@ class Maker {
         this.displayHeadings = {};
         if (attributes.displayHeadings) {
             for (let heading of Object.keys(attributes.displayHeadings)) {
+                if(!Object.keys(this.headings).includes(heading)) continue;
                 this.headings[heading] = attributes.displayHeadings[heading];
             }
         }
@@ -1513,7 +1521,7 @@ class UpdaterMaker {
     //dang you gotta love the j-scrip
     objKeysAndTypes(obj) {
         return Object.keys(obj).reduce((okt, prop) => {
-            okt[prop] = typeof obj[prop];
+            okt[prop] = obj[prop] === null ? "null" : typeof obj[prop];
             return okt;
         }, {});
     }
@@ -1594,7 +1602,7 @@ class UpdaterMaker {
     makeSelection(key, options, labelText, name, attributes, defaultVal) {
         if (!Array.isArray(options)) throw new Error("UpdaterMaker makeSelection called with non array: " + options);
         if (options.length == 0) throw new Error("UpdaterMaker makeSelection options array is empty.");
-        if ((typeof options[0] !== 'object' && !options.includes(defaultVal)) || 
+        if ((typeof options[0] !== 'object' && !options.includes(defaultVal)) ||
             (typeof options[0] == 'object' && !options.map(opt => opt.text).includes(defaultVal))) {
             throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given options");
         }
@@ -1623,7 +1631,7 @@ class UpdaterMaker {
             }
 
             let option = document.createElement("option");
-            if(valType) {
+            if (valType) {
                 option.value = opt.value;
                 option.innerText = opt.text;
             }
@@ -1632,7 +1640,7 @@ class UpdaterMaker {
         }
 
         //can't set selection values until after options are added
-        if(typeof options[0] == "object") defaultVal = options.filter(opt => opt.text == defaultVal)[0].value;
+        if (typeof options[0] == "object") defaultVal = options.filter(opt => opt.text == defaultVal)[0].value;
         select.value = defaultVal;
 
         selectContainer.appendChild(select);
@@ -1657,6 +1665,7 @@ class UpdaterMaker {
         switch (type) {
             case "string":
             case "text":
+            case "null":
                 input.type = "text";
                 break;
 
