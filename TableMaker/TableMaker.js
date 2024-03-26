@@ -167,6 +167,14 @@ class NMaker {
         return a;
     }
 
+    static makeImg(src, alt, classes = null) {
+        let img = document.createElement("img");
+        img.src = src;
+        img.alt = alt;
+        if(classes) NMaker.addStylesToElement(img, classes);
+        return img;
+    }
+
     static makeDateRangePicker(id, classes, lower = null, upper = null) {
         //some defaults
         let fromDateValue = NMaker.isDate(lower) ? lower : new Date().toISOString().split('T')[0];
@@ -557,6 +565,14 @@ class TableMaker {
                 }
                 cellData = NMaker.makeLink(linkData, cellData, this.attributes.classes.link);
             }
+
+            //Image
+            else if (this.attributes.img && this.attributes.img.hasOwnProperty(prop)) {
+                let imgData = this.attributes.img[prop];
+                cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
+            }
+
+            //Text node
             else {
                 cellData = document.createTextNode(cellData);
             }
@@ -1493,6 +1509,7 @@ class UpdaterMaker {
             submitText: "Submit",
             primaryKey: Object.keys(initial)[0],
             showPrimaryKey: false,
+            editablePrimaryKey: false,
             inputTypes: this.objKeysAndTypes(initial),
             names: this.objKeysAndPascalkeys(initial),
             labels: this.objKeysAndCapitalisedkeys(initial),
@@ -1692,7 +1709,7 @@ class UpdaterMaker {
         }
 
         if (this.attributes.primaryKey == key) {
-            input.readOnly = true;
+            input.readOnly = !this.attributes.editablePrimaryKey;
             if (this.attributes.showPrimaryKey == false) {
                 input.hidden = true;
                 inputContainer.classList.add("hidden");

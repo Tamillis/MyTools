@@ -22,6 +22,7 @@ The styling defaults make plentiful use of Bootstrap, but it is not required (al
   - [Modifier](#modifier)
   - [Input](#input)
   - [API](#api-1)
+- [UpdaterMaker](#updatermaker)
 
 
 ### Data Attributes
@@ -211,4 +212,38 @@ NMaker.filterOptions = Object.freeze({
     boolean: "Boolean",
     select: "Select"
 });
+```
+
+## UpdaterMaker
+
+```js
+id: "updater-" + Date.now(),
+parentSelector: "body",
+classes: {
+    container: ["row"],
+    title: ["h3"],
+    form: [],
+    input: ["form-control"],
+    select: ["form-control"],
+    inputContainer: ["input-group"],
+    button: ["btn", "btn-sm", "btn-danger", "float-end"],
+    label: ["input-group-text"],
+    checkbox: ["form-check-input"]
+},
+blueprint: initial,
+title: "Updater",
+hideTitle: false,
+titleParentSelector: false,
+endpoint: "undefined",
+submitText: "Submit",
+primaryKey: Object.keys(initial)[0],
+showPrimaryKey: false,
+editablePrimaryKey: false,
+inputTypes: this.objKeysAndTypes(initial),
+names: this.objKeysAndPascalkeys(initial),
+labels: this.objKeysAndCapitalisedkeys(initial),
+selections: false,
+ignore: [],
+defaults: initial,
+attributes: {}
 ```
