@@ -66,15 +66,15 @@ class NMaker {
     }
 
     //couresy of https://stackoverflow.com/questions/4068573/convert-string-to-pascal-case-aka-uppercamelcase-in-javascript
-    static toPascalCase (str) {
+    static toPascalCase(str) {
         if (/^[\p{L}\d]+$/iu.test(str)) {
-          return str.charAt(0).toUpperCase() + str.slice(1);
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
         return str.replace(
-          /([\p{L}\d])([\p{L}\d]*)/giu,
-          (g0, g1, g2) => g1.toUpperCase() + g2.toLowerCase()
+            /([\p{L}\d])([\p{L}\d]*)/giu,
+            (g0, g1, g2) => g1.toUpperCase() + g2.toLowerCase()
         ).replace(/[^\p{L}\d]/giu, '');
-      }
+    }
 
     //courtesy of https://stackoverflow.com/questions/16242449/regex-currency-validation
     static isPoundCurrency(data) {
@@ -171,7 +171,7 @@ class NMaker {
         let img = document.createElement("img");
         img.src = src;
         img.alt = alt;
-        if(classes) NMaker.addStylesToElement(img, classes);
+        if (classes) NMaker.addStylesToElement(img, classes);
         return img;
     }
 
@@ -307,7 +307,7 @@ class Maker {
         this.displayHeadings = {};
         if (attributes.displayHeadings) {
             for (let heading of Object.keys(attributes.displayHeadings)) {
-                if(!Object.keys(this.headings).includes(heading)) continue;
+                if (!Object.keys(this.headings).includes(heading)) continue;
                 this.headings[heading] = attributes.displayHeadings[heading];
             }
         }
@@ -766,6 +766,7 @@ class FilterMaker {
                 container: ["mb-2", "d-flex", "g-2"],
                 filterContainer: ["flex-grow-1"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
+                buttonGroup: ["btn-group", "px-2"],
                 label: ["input-group-text"],
                 checkbox: ["form-check-input"],
                 selectionContainer: ["px-2"],
@@ -774,8 +775,7 @@ class FilterMaker {
                 inputContainer: ["flex-grow-1"],
                 input: ["form-control"],
                 inputGroup: ["input-group"],
-                dateRange: ["input-group"],
-                buttonGroup: ["btn-group", "px-2"]
+                dateRange: ["input-group"]
             },
             ignore: false,
             order: NMaker.sortOptions.original,
@@ -1497,16 +1497,21 @@ class UpdaterMaker {
                 input: ["form-control"],
                 select: ["form-control"],
                 inputContainer: ["input-group"],
-                button: ["btn", "btn-sm", "btn-danger", "float-end"],
+                button: ["btn", "btn-sm", "float-end"],
+                submit: ["btn-danger"],
+                cancel: ["btn-warning"],
                 label: ["input-group-text"],
                 checkbox: ["form-check-input"]
             },
             blueprint: initial,
+            additional: false,  //any key-value pairs of data you want to submit in addition to the shown form, all as hidden inputs
             title: "Updater",
             hideTitle: false,
             titleParentSelector: false,
             endpoint: "undefined",
             submitText: "Submit",
+            cancelText: "Cancel",
+            useCancelConfirmation: false,
             primaryKey: Object.keys(initial)[0],
             showPrimaryKey: false,
             editablePrimaryKey: false,
@@ -1515,6 +1520,7 @@ class UpdaterMaker {
             labels: this.objKeysAndCapitalisedkeys(initial),
             selections: false,
             ignore: [],
+            readonly: [],
             defaults: initial,
             attributes: {}
         };
@@ -1562,7 +1568,7 @@ class UpdaterMaker {
         let updaterContainer = NMaker.replaceElement(this.attributes.id, "div", this.attributes.classes.container);
 
         //title
-        if (!this.attributes.hideTitle) {
+        if (!this.attributes.hideTitle && this.attributes.title != "") {
             let title = NMaker.replaceElement(this.attributes.id + "-title", "h3", this.attributes.classes.title);
             title.innerText = this.attributes.title;
             if (this.attributes.titleParentSelector) {
@@ -1604,12 +1610,40 @@ class UpdaterMaker {
             form.appendChild(input);
         }
 
+        //additional
+        //key-value pairs of hidden inputs required to be submitted alongside user-input form data
+        if(this.attributes.additional) {
+            let data = this.attributes.additional;
+            for(let key in data) {
+                let input = this.makeBasicInput(key, key, null, data[key]);
+                input.type = "hidden";
+                form.appendChild(input);
+            }
+        }
+
         //add submit button
         let submitBtn = document.createElement("input");
+        submitBtn.id = this.attributes.id + "-submit";
         submitBtn.type = "submit";
         submitBtn.value = this.attributes.submitText;
         NMaker.addStylesToElement(submitBtn, this.attributes.classes.button);
+        NMaker.addStylesToElement(submitBtn, this.attributes.classes.submit);
         form.appendChild(submitBtn);
+
+        //add cancel button
+        let cancelBtn = document.createElement("button");
+        cancelBtn.id = this.attributes.id + "-cancel";
+        cancelBtn.type = "button";
+        cancelBtn.innerText = this.attributes.cancelText;
+        NMaker.addStylesToElement(cancelBtn, this.attributes.classes.button);
+        NMaker.addStylesToElement(cancelBtn, this.attributes.classes.cancel);
+        cancelBtn.onclick = () => {
+            if(this.attributes.useCancelConfirmation && !confirm("Are you sure you wish to cancel?")) return;
+
+            NMaker.dom(this.attributes.parentSelector).innerHTML = "";
+            if(this.attributes.titleParentSelector) NMaker.dom(this.attributes.titleParentSelector).innerHTML = "";
+        }
+        form.appendChild(cancelBtn);
 
         updaterContainer.appendChild(form);
 
@@ -1707,6 +1741,8 @@ class UpdaterMaker {
                 console.warn("Invalid type " + type + " passed to UpdaterMaker makeInput()");
                 break;
         }
+
+        if(this.attributes.readonly.includes(key)) input.readonly = true;
 
         if (this.attributes.primaryKey == key) {
             input.readOnly = !this.attributes.editablePrimaryKey;

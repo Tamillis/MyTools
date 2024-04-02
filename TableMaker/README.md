@@ -231,6 +231,7 @@ classes: {
     checkbox: ["form-check-input"]
 },
 blueprint: initial,
+additional: false,  //kvp of hidden inputs for data you want to include in the form posting, such as API keys
 title: "Updater",
 hideTitle: false,
 titleParentSelector: false,
