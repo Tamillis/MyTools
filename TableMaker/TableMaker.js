@@ -1501,7 +1501,8 @@ class UpdaterMaker {
                 submit: ["btn-danger"],
                 cancel: ["btn-warning"],
                 label: ["input-group-text"],
-                checkbox: ["form-check-input"]
+                checkbox: ["form-check-input"],
+                textarea: ["form-control"]
             },
             blueprint: initial,
             additional: false,  //any key-value pairs of data you want to submit in addition to the shown form, all as hidden inputs
@@ -1598,6 +1599,14 @@ class UpdaterMaker {
                     this.attributes.defaults[key]
                 );
             }
+            else if (["bigtext", "bigstring", "textarea"].includes(this.attributes.inputTypes[key])) {
+                input = this.makeTextArea(                
+                    key,
+                    this.attributes.labels[key],
+                    this.attributes.names[key],
+                    this.attributes.attributes[key],
+                    this.attributes.defaults[key]);
+            }
             else input = this.makeInput(
                 key,
                 this.attributes.inputTypes[key],
@@ -1648,6 +1657,38 @@ class UpdaterMaker {
         updaterContainer.appendChild(form);
 
         NMaker.dom(this.attributes.parentSelector).appendChild(updaterContainer);
+    }
+
+    makeTextArea(key, labelText, name, attributes, defaultVal) {
+        //input container
+        let inputContainer = document.createElement("div");
+        inputContainer.id = this.idForInput(key) + "-container";
+        NMaker.addStylesToElement(inputContainer, this.attributes.classes.inputContainer);
+
+        //label
+        let label = document.createElement("label");
+        label.id = this.idForInput(key) + "-label";
+        NMaker.addStylesToElement(label, this.attributes.classes.label);
+        label.innerText = labelText;
+
+        //text area
+        let input = this.makeBasicInput(key, name, attributes, defaultVal, "textarea");
+
+        if(this.attributes.readonly.includes(key)) input.readonly = true;
+
+        if (this.attributes.primaryKey == key) {
+            input.readOnly = !this.attributes.editablePrimaryKey;
+            if (this.attributes.showPrimaryKey == false) {
+                input.hidden = true;
+                inputContainer.classList.add("hidden");
+                inputContainer.hidden = true;
+            }
+        }
+
+        inputContainer.appendChild(label);
+        inputContainer.appendChild(input);
+
+        return inputContainer;
     }
 
     makeSelection(key, options, labelText, name, attributes, defaultVal) {
@@ -1764,7 +1805,10 @@ class UpdaterMaker {
         NMaker.addStylesToElement(input, this.attributes.classes[element])
         input.id = this.idForInput(key);
         input.name = name;
-        input.value = defaultVal;
+
+        if(element == "textarea") input.innerText = defaultVal;
+        else input.value = defaultVal;
+
         for (let attr in attributes) {
             input[attr] = attributes[attr];
         }
