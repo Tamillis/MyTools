@@ -54,6 +54,11 @@ class NMaker {
         return str !== null && (new Date(str) !== "Invalid Date") && !isNaN(new Date(str));
     }
 
+    static removeSecondsFromISOString(str) {
+        let val = str.split(":");
+        return `${val[0]}:${val[1]}:00`;
+    }
+
     //courtesy of https://stackoverflow.com/questions/63116039/camelcase-to-kebab-case
     static toKebabCase(str) {
         return str.replace(/[A-Z]+(?![a-z])|[A-Z]/g, ($, ofs) => (ofs ? "-" : "") + $.toLowerCase())
@@ -173,6 +178,23 @@ class NMaker {
         img.alt = alt;
         if (classes) NMaker.addStylesToElement(img, classes);
         return img;
+    }
+
+    static makeElement(element, attributes, classes) {
+        let el = document.createElement(element);
+        NMaker.addStylesToElement(el, classes)
+
+        for (let attr in attributes) {
+            el[attr] = attributes[attr];
+        }
+        
+        //and tweaks based on element
+        if (element == "textarea") el.innerText = el.value != undefined ? el.value : "";
+        else if (element == "input" && attributes.type && attributes.type == "datetime-local" && attributes.value) {
+            el.value = NMaker.removeSecondsFromISOString(attributes.value);
+        }
+
+        return el;
     }
 
     static makeDateRangePicker(id, classes, lower = null, upper = null) {
@@ -436,6 +458,7 @@ class TableMaker {
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.alphabetical : NMaker.sortOptions.alphabeticalReverse;
                         break;
                     case "date":
+                    case "datetime":
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
                         break;
                     default:
@@ -544,8 +567,11 @@ class TableMaker {
                 }
             }
 
-            //Date
-            if (cellData instanceof Date) cellData = document.createTextNode(cellData.toLocaleDateString());
+            //Dates
+            if (cellData instanceof Date) {
+                if (this.Maker.colTypes[prop] == "date") cellData = document.createTextNode(cellData.toLocaleDateString());
+                else if (["datetime", "datetime-local"].includes(this.Maker.colTypes[prop])) cellData = document.createTextNode(cellData.toLocaleString());
+            }
 
             //Currency
             else if (this.attributes.currency && this.attributes.currency.includes(prop)) {
@@ -1213,6 +1239,7 @@ class FilterMaker {
                 this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
                 break;
             case "date":
+            case "datetime":
                 this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
                 break;
             case "object":
@@ -1600,7 +1627,7 @@ class UpdaterMaker {
                 );
             }
             else if (["bigtext", "bigstring", "textarea"].includes(this.attributes.inputTypes[key])) {
-                input = this.makeTextArea(                
+                input = this.makeTextArea(
                     key,
                     this.attributes.labels[key],
                     this.attributes.names[key],
@@ -1621,10 +1648,10 @@ class UpdaterMaker {
 
         //additional
         //key-value pairs of hidden inputs required to be submitted alongside user-input form data
-        if(this.attributes.additional) {
+        if (this.attributes.additional) {
             let data = this.attributes.additional;
-            for(let key in data) {
-                let input = this.makeBasicInput(key, key, null, data[key]);
+            for (let key in data) {
+                let input = NMaker.makeElement("input", {id: key, name:key, value:data[key]});
                 input.type = "hidden";
                 form.appendChild(input);
             }
@@ -1647,10 +1674,10 @@ class UpdaterMaker {
         NMaker.addStylesToElement(cancelBtn, this.attributes.classes.button);
         NMaker.addStylesToElement(cancelBtn, this.attributes.classes.cancel);
         cancelBtn.onclick = () => {
-            if(this.attributes.useCancelConfirmation && !confirm("Are you sure you wish to cancel?")) return;
+            if (this.attributes.useCancelConfirmation && !confirm("Are you sure you wish to cancel?")) return;
 
             NMaker.dom(this.attributes.parentSelector).innerHTML = "";
-            if(this.attributes.titleParentSelector) NMaker.dom(this.attributes.titleParentSelector).innerHTML = "";
+            if (this.attributes.titleParentSelector) NMaker.dom(this.attributes.titleParentSelector).innerHTML = "";
         }
         form.appendChild(cancelBtn);
 
@@ -1672,9 +1699,9 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //text area
-        let input = this.makeBasicInput(key, name, attributes, defaultVal, "textarea");
+        let input = NMaker.makeElement("textarea", {...attributes, id:key, name:name, value: defaultVal}, this.attributes.classes.textarea);
 
-        if(this.attributes.readonly.includes(key)) input.readonly = true;
+        if (this.attributes.readonly.includes(key)) input.readonly = true;
 
         if (this.attributes.primaryKey == key) {
             input.readOnly = !this.attributes.editablePrimaryKey;
@@ -1712,7 +1739,7 @@ class UpdaterMaker {
         selectContainer.appendChild(label);
 
         //and the select box itself
-        let select = this.makeBasicInput(key, name, attributes, defaultVal, "select");
+        let select = NMaker.makeElement("select", {id:key, name:name, ...attributes, value:defaultVal}, this.attributes.classes.select);
         let type = typeof options[0];
         let valType;
         if (type == "object") valType = typeof options[0].value;
@@ -1753,7 +1780,7 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //switch on type
-        let input = this.makeBasicInput(key, name, attributes, defaultVal);
+        let input = NMaker.makeElement("input", {id:key, name:name, ...attributes, value:defaultVal}, this.attributes.classes.input);
         switch (type) {
             case "string":
             case "text":
@@ -1769,21 +1796,26 @@ class UpdaterMaker {
             case "date":
                 input.type = "date";
                 break;
+            case "datetime":
+            case "datetime-local":
+                input.type = "datetime-local"
+                input.value = NMaker.removeSecondsFromISOString(input.value);
+                break;
 
-            case "checkbox":
+            case "checkbox": s
             case "boolean":
                 input.type = "checkbox";
                 input.checked = String(defaultVal) == "true";
+                input.onchange = () => input.value = Boolean(input.checked);
                 input.classList.remove(...input.classList);
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
-
             default:
                 console.warn("Invalid type " + type + " passed to UpdaterMaker makeInput()");
                 break;
         }
 
-        if(this.attributes.readonly.includes(key)) input.readonly = true;
+        if (this.attributes.readonly.includes(key)) input.readonly = true;
 
         if (this.attributes.primaryKey == key) {
             input.readOnly = !this.attributes.editablePrimaryKey;
@@ -1798,21 +1830,6 @@ class UpdaterMaker {
         inputContainer.appendChild(input);
 
         return inputContainer;
-    }
-
-    makeBasicInput(key, name, attributes, defaultVal, element = "input") {
-        let input = document.createElement(element);
-        NMaker.addStylesToElement(input, this.attributes.classes[element])
-        input.id = this.idForInput(key);
-        input.name = name;
-
-        if(element == "textarea") input.innerText = defaultVal;
-        else input.value = defaultVal;
-
-        for (let attr in attributes) {
-            input[attr] = attributes[attr];
-        }
-        return input;
     }
 
     idForInput(key) {
