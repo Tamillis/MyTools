@@ -1651,7 +1651,7 @@ class UpdaterMaker {
         if (this.attributes.additional) {
             let data = this.attributes.additional;
             for (let key in data) {
-                let input = NMaker.makeElement("input", {id: key, name:key, value:data[key]});
+                let input = NMaker.makeElement("input", {id: NMaker.toKebabCase(key), name:key, value:data[key]});
                 input.type = "hidden";
                 form.appendChild(input);
             }
@@ -1701,7 +1701,7 @@ class UpdaterMaker {
         //text area
         let input = NMaker.makeElement("textarea", {...attributes, id:key, name:name, value: defaultVal}, this.attributes.classes.textarea);
 
-        if (this.attributes.readonly.includes(key)) input.readonly = true;
+        if (this.attributes.readonly.includes(key)) input.readOnly = true;
 
         if (this.attributes.primaryKey == key) {
             input.readOnly = !this.attributes.editablePrimaryKey;
@@ -1780,7 +1780,7 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //switch on type
-        let input = NMaker.makeElement("input", {id:key, name:name, ...attributes, value:defaultVal}, this.attributes.classes.input);
+        let input = NMaker.makeElement("input", {id:NMaker.toKebabCase(key), name:name, ...attributes, value:defaultVal}, this.attributes.classes.input);
         switch (type) {
             case "string":
             case "text":
@@ -1815,7 +1815,7 @@ class UpdaterMaker {
                 break;
         }
 
-        if (this.attributes.readonly.includes(key)) input.readonly = true;
+        if (this.attributes.readonly.includes(key)) input.readOnly = true;
 
         if (this.attributes.primaryKey == key) {
             input.readOnly = !this.attributes.editablePrimaryKey;
