@@ -15,13 +15,18 @@ I want something where I can write something like this:
     <doc src="path-to-html-file-that-contains-the-re-used-html(inc js and css)-here" />
 </head>
 <body>
-    <div id="title">
+    <h1 const="name-of-global-scope-const-to-grab-and-put-in-innerText-regardless-of-node"><h1>
+
+    <section id="foreword">
         <md src="path-to-md">Custom md</md>
-    </div>
+    </section>
 
     <loop js="iterable-js-var-name" json="path-to-iterable-json">
         <html>as generated from values / objects of iterable</html>
+        <>Or loop through the iterable as a series of filepaths for html, of key-value pairs of filetype - filepath to grab and print various html, md etc. file contents?</>
     </loop>
 </body>
 </html>
 ```
+
+And a command-line program converts it into static html
