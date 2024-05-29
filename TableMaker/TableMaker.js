@@ -86,6 +86,7 @@ class NMaker {
         return /(?=.*?\d)^£?(([1-9]\d{0,2}(,\d{3})*)|\d+)?(\.\d{1,2})?$/.test(data);
     }
 
+    //checks data is tabular
     static isCompatible(data) {
         if (!Array.isArray(data)) {
             console.error("Data is not an array");
@@ -114,6 +115,7 @@ class NMaker {
         return true;
     }
 
+    //compare using NMaker sortOptions
     static compare = (sortOption, a, b) => {
         if (sortOption == NMaker.sortOptions.original) return 1;
         if (sortOption == NMaker.sortOptions.numeric || sortOption == NMaker.sortOptions.date) return a - b;
@@ -129,10 +131,12 @@ class NMaker {
         return 1;
     };
 
-    static sort(data, sortOrder) {
-        return data.slice().sort((a, b) => NMaker.compare(sortOrder, a, b));
+    //sort using NMaker sortOptions
+    static sort(data, sortOption) {
+        return data.slice().sort((a, b) => NMaker.compare(sortOption, a, b));
     }
 
+    //produce a range of numeric values in an array
     static range(lower, upper, step = 1) {
         let arr = []
         for (let i = lower; i <= upper; i += step) {
@@ -187,7 +191,7 @@ class NMaker {
         for (let attr in attributes) {
             el[attr] = attributes[attr];
         }
-        
+
         //and tweaks based on element
         if (element == "textarea") el.innerText = el.value != undefined ? el.value : "";
         else if (element == "input" && attributes.type && attributes.type == "datetime-local" && attributes.value) {
@@ -265,6 +269,66 @@ class NMaker {
         return numberRangePicker;
     }
 
+    static makeMultiSelector(options, id, name) {
+        if (options == null || options.length == 0) {
+            console.warn("makeMultiSelector() called without options, failed to make.");
+            return;
+        }
+        if (id == null || name == null) console.warn("makeMultiSelector() called without an id or name")
+
+        let container = document.createElement("div");
+        container.id = id + "-container";
+
+        //hidden input of csv's
+        let input = document.createElement("input");
+        input.id = id;
+        input.name = name;
+        input.type = "hidden";
+        container.appendChild(input);
+
+        //display output
+        let output = document.createElement("input");
+        output.id = id + "-output";
+        output.readOnly = true;
+        output.type = "text";
+        container.appendChild(output);
+
+        //selection box of options
+        let selector = document.createElement("select");
+        selector.multiple = true;
+        selector.style.overflowY = "auto";  //its a multiple select box, don't need scroll bars unless its too big
+        for (let option of options) {
+            let opt = document.createElement("option");
+            opt.innerText = option;
+            selector.appendChild(opt);
+            //cheeky use of the obj representing the node for tracking state
+            opt.addEventListener("mousedown", () => {
+                if (selector["NMaker_" + opt.innerText]) {
+                    delete selector["NMaker_" + opt.innerText];
+                    opt.style.background = "rgba(0,0,0,0)";
+                } else {
+                    selector["NMaker_" + opt.innerText] = opt.innerText;
+                    opt.style.background = "rgba(0,0,0,0.1)";
+                }
+                output.value = getSelected().join(", ");
+                input.value = getSelected().join("|");
+                ;
+            });
+        }
+
+        container.appendChild(selector);
+
+        let getSelected = () => {
+            let selected = [];
+            for (let option of options) {
+                if (selector["NMaker_" + option]) selected.push(option);
+            }
+            return selected;
+        }
+
+        return container;
+    }
+
     //all NMaker stored data start with their attribute plus -etc so this removes all storage kvp assocaited with element of id 'id'
     static clearStorageOfId(id) {
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
@@ -280,6 +344,16 @@ class NMaker {
         maker.makeUpdater(attributes);
         maker.build();
         return;
+    }
+
+    //parse datalist into the format used by tablemaker in various locations: an array of kvp {value, text} for options <option value="x" data-id="y" />
+    static parseKvpDatalist(id) {
+        return Array.from(dom(id).children).map(opt => {
+            return {
+                value: opt.dataset.id,
+                text: opt.value
+            }
+        });
     }
 }
 
@@ -1607,6 +1681,7 @@ class UpdaterMaker {
 
         //form
         let form = document.createElement("form");
+        form.id = this.attributes.id + "-form";
         NMaker.addStylesToElement(form, this.attributes.classes.form);
         form.method = "post";
         form.action = this.attributes.endpoint;
@@ -1699,7 +1774,7 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //text area
-        let input = NMaker.makeElement("textarea", {...attributes, id:key, name:name, value: defaultVal}, this.attributes.classes.textarea);
+        let input = NMaker.makeElement("textarea", { ...attributes, id: key, name: name, value: defaultVal }, this.attributes.classes.textarea);
 
         if (this.attributes.readonly.includes(key)) input.readOnly = true;
 
@@ -1721,9 +1796,20 @@ class UpdaterMaker {
     makeSelection(key, options, labelText, name, attributes, defaultVal) {
         if (!Array.isArray(options)) throw new Error("UpdaterMaker makeSelection called with non array: " + options);
         if (options.length == 0) throw new Error("UpdaterMaker makeSelection options array is empty.");
-        if ((typeof options[0] !== 'object' && !options.includes(defaultVal)) ||
-            (typeof options[0] == 'object' && !options.map(opt => opt.text).includes(defaultVal))) {
-            throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given options");
+
+        //options could be an array of values, or array of {value: ... , text: ...} objects.
+        //check options are valid
+        let optionType = "value";   //or "option.innerText" or "option.value"
+        if (typeof options[0] !== 'object') {
+            if (!options.includes(defaultVal)) throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given options");
+        }
+        else {
+            //options are objects, check whether we are working with innerText or values
+            optionType = "option.value";
+            if (options.map(opt => opt.text).includes(defaultVal)) optionType = "innerText";
+            else if (!options.map(opt => opt.value).includes(String(defaultVal))) {
+                throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given option text or values");
+            }
         }
 
         //select container
@@ -1739,18 +1825,11 @@ class UpdaterMaker {
         selectContainer.appendChild(label);
 
         //and the select box itself
-        let select = NMaker.makeElement("select", {id:key, name:name, ...attributes, value:defaultVal}, this.attributes.classes.select);
-        let type = typeof options[0];
-        let valType;
-        if (type == "object") valType = typeof options[0].value;
+        let select = NMaker.makeElement("select", { id: key, name: name, ...attributes, value: defaultVal }, this.attributes.classes.select);
 
         for (let opt of options) {
-            if (typeof opt !== type || (valType && typeof opt.value !== valType)) {
-                throw new Error("UpdaterMaker makeSelection, not all options of passed in array of the same type " + type);
-            }
-
             let option = document.createElement("option");
-            if (valType) {
+            if (optionType != "value") {
                 option.value = opt.value;
                 option.innerText = opt.text;
             }
@@ -1759,7 +1838,7 @@ class UpdaterMaker {
         }
 
         //can't set selection values until after options are added
-        if (typeof options[0] == "object") defaultVal = options.filter(opt => opt.text == defaultVal)[0].value;
+        if (optionType == "option.innerText") defaultVal = options.filter(opt => opt.text == defaultVal)[0].value;
         select.value = defaultVal;
 
         selectContainer.appendChild(select);
@@ -1786,6 +1865,10 @@ class UpdaterMaker {
             case "text":
             case "null":
                 input.type = "text";
+                break;
+
+            case "password":
+                input.type = "password"
                 break;
 
             case "number":

@@ -1,16 +1,27 @@
 # NMaker Utilities
 My own light JS Front End framework.
 
-The use case is simply: given a single lump of tabular JSON data, have a bunch of tools to efficiently and effectively manipulate that data, giving me full control over it and also cutting down on server calls by a lot.
+The use case is simply: given a single lump of tabular JSON data, have a bunch of tools to efficiently and effectively present and manipulate that data, giving me full control over it and also cutting down on server calls by a lot. This is the result of that. It might seem a bit messy at times, and this README is certainly lacking in documentation (please refer to the .html demo's for more illustrative examples as they double as my test beds, and also just the source code), I do plan on properly updating this at some point.
 
-The `NMaker` static class contains some helper functions as well as doubling as the source of truth for the data under `NMaker.data`, `NMaker.filteredData` and `NMaker.pagedData`.
+The `NMaker` static class contains some helper functions such as dom, a shortcut & convient combo of `document`'s `getElementById`, `querySelector` and `querySelectorAll`. It also includes some smaller maker functions, returning dom elements ready for appending: 
+- makeBtn
+- makeLink
+- makeImg
+- makeElement (using given id, attributes and classes)
+- makeDateRangePicker (creates a double date input for 'from' and 'to' dates)
+- makeNumberRangePicker (creates a double number input for 'from' and 'to' values)
+- makeMultiSelector (a click based multi selector, see [MultiSelectorDemo.html](./MultiSelectorDemo.html))
+- makeUpdater (a convenient shorthand for creating an updator)
 
-All components load from this data, and listen in on the `updatedData` and `updatedPagedData` events that the corresponding components set up on the `NMaker` object.
+The `Maker` class is used to build the paginator, filter and table tools, providing a contained point of reference and data store.
 
-To use the system, first call `NMaker.init(data)` with your tabular JSON data and then create whatever components you want by instantiating an object of that component.
+All components load from this data, and are dynamically updated through the Maker.
 
-The objects create their corresponding HTML immediately, but calling `[component].make[Component](attributes)` will remake them, removing them from where they were.
+To use the system, initialise a Maker instance `new Maker(data)` with your tabular JSON data and then create whatever components you want by calling the Maker's `makeTable`, `makePaginator` and `makeFilter` functions. Lastly call `maker.build()` to create the dom.
 
+The objects create their corresponding HTML, but calling `[component].make[Component](attributes)` will remake them, removing them from where they were.
+
+### Styles
 The styling defaults make plentiful use of Bootstrap, but it is not required (all styling is provided via `attributes.classes` so any custom CSS classes can be used).
 
 - [TableMaker](#tablemaker)
@@ -216,6 +227,10 @@ NMaker.filterOptions = Object.freeze({
 
 ## UpdaterMaker
 
+See [the demo](./UpdateMakerDemo.html) for a better idea of how to use UpdateMaker.
+
+I will update this README at some point, promise.
+
 ```js
 id: "updater-" + Date.now(),
 parentSelector: "body",
@@ -243,7 +258,7 @@ editablePrimaryKey: false,
 inputTypes: this.objKeysAndTypes(initial),
 names: this.objKeysAndPascalkeys(initial),
 labels: this.objKeysAndCapitalisedkeys(initial),
-selections: false,
+selections: false,  //array of strings for option innerText, or array of {value: value, text: innerText} objects
 ignore: [],
 defaults: initial,
 attributes: {}
