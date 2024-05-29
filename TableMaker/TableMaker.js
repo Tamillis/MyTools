@@ -1807,7 +1807,7 @@ class UpdaterMaker {
             //options are objects, check whether we are working with innerText or values
             optionType = "option.value";
             if (options.map(opt => opt.text).includes(defaultVal)) optionType = "innerText";
-            else if (!options.map(opt => opt.value).includes(String(defaultVal))) {
+            else if (!options.map(opt => String(opt.value)).includes(String(defaultVal))) {
                 throw new Error("UpdaterMaker makeSelection default value " + defaultVal + " not one of the given option text or values");
             }
         }
