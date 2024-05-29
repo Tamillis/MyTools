@@ -13,6 +13,7 @@ I want something where I can write something like this:
 <head> 
     (basic head stuff)
     <doc src="path-to-html-file-that-contains-the-re-used-html(inc js and css)-here" />
+    <json src="json-file-src-which-will-be-converted-to-global-scope-js-object-of-same-name" />
 </head>
 <body>
     <h1 const="name-of-global-scope-const-to-grab-and-put-in-innerText-regardless-of-node"><h1>
