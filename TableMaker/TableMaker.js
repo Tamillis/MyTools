@@ -163,6 +163,7 @@ class NMaker {
         btn.id = id;
         btn.innerText = name;
         btn.onclick = fn;
+        btn.type = "button";
         if (classes) NMaker.addStylesToElement(btn, classes);
         if (tooltip) btn.title = tooltip;
         return btn;
@@ -1011,7 +1012,9 @@ class FilterMaker {
             if (this.attributes.useMemory && storedFilterIds !== null) {
                 storedFilterIds = storedFilterIds.split(',');
                 //get the value at the end of the last filter id
-                this.filterIdsNext = Number(storedFilterIds[storedFilterIds.length - 1].split('-')[1]) + 1;
+                let prevfilterIdParts = storedFilterIds[storedFilterIds.length - 1].split("-");
+                let numberPart = prevfilterIdParts[prevfilterIdParts.length - 1];
+                this.filterIdsNext = Number(numberPart) + 1;
             }
         }
         return this.attributes.id + "-" + this.filterIdsNext;
@@ -1019,7 +1022,10 @@ class FilterMaker {
 
     makeNewFilterId() {
         //fun fact, if this.filterIdsNext is 0 then !this.filterIdsNext is also true, so this is not the "present" check I thought it was
-        if (!this.hasOwnProperty('filterIdsNext')) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
+        if (!this.hasOwnProperty('filterIdsNext')) {
+            let parts = this.getNextFilterId().split("-");
+            this.filterIdsNext = Number(parts[parts.length-1]);
+        }
         else this.filterIdsNext++;
         return this.attributes.id + "-" + this.filterIdsNext;
     }
@@ -1046,7 +1052,11 @@ class FilterMaker {
 
     makeSubFilters() {
         //create subfilters if memory calls for them && subfilters are in use
-        if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
+        if (this.attributes.useSubFilter && this.filterIds.length > 0) {
+            for (let i = 0; i < this.filterIds.length; i++) {
+                this.makeSubFilter(this.filterIds[i]);
+            }
+        }
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
 
@@ -1803,12 +1813,12 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //text area
-        let input = NMaker.makeElement("textarea", 
-            { 
-                ...attributes, 
-                id: this.attributes.id + "-" + key, 
-                name: name, 
-                value: defaultVal 
+        let input = NMaker.makeElement("textarea",
+            {
+                ...attributes,
+                id: this.attributes.id + "-" + key,
+                name: name,
+                value: defaultVal
             }, this.attributes.classes.textarea);
 
         if (this.attributes.readonly.includes(key)) input.readOnly = true;
