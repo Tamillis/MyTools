@@ -158,10 +158,10 @@ class NMaker {
         return el;
     }
 
-    static makeBtn(id, name, fn, classes = null, tooltip = null) {
+    static makeBtn(id, text, fn, classes = null, tooltip = null) {
         let btn = document.createElement("button");
         btn.id = id;
-        btn.innerText = name;
+        btn.innerText = text;
         btn.onclick = fn;
         btn.type = "button";
         if (classes) NMaker.addStylesToElement(btn, classes);
@@ -200,6 +200,18 @@ class NMaker {
         }
 
         return el;
+    }
+
+    static makeNullableDateInput(id, classes = {container: [], input: [], button: []}, value = null) {
+
+        let container = NMaker.makeElement("div", {}, classes.container);
+        let input = NMaker.makeElement("input", {type:"date", id:id, name:NMaker.toPascalCase(id) }, classes.input);
+        input.value = value;
+        let btn = NMaker.makeBtn(id + "-btn", "X", () => input.value = "", classes.button, "Clear date");
+        container.appendChild(input);
+        container.appendChild(btn);
+
+        return container;
     }
 
     static makeDateRangePicker(id, classes, lower = null, upper = null) {
@@ -1251,8 +1263,8 @@ class FilterMaker {
     }
 
     saveToStorage() {
-        //clear sessionStorage
-        sessionStorage.clear();
+        //clear sessionStorage of any items starting with the id, i.e. of this filter
+        NMaker.clearStorageOfId(this.attributes.id);
 
         for (let filterId of this.filterIds) {
             //record in memory
@@ -1760,7 +1772,7 @@ class UpdaterMaker {
         if (this.attributes.additional) {
             let data = this.attributes.additional;
             for (let key in data) {
-                let input = NMaker.makeElement("input", { id: NMaker.toKebabCase(key), name: key, value: data[key] });
+                let input = NMaker.makeElement("input", { id: this.attributes.id + "-" + NMaker.toKebabCase(key), name: key, value: data[key] });
                 input.type = "hidden";
                 form.appendChild(input);
             }
