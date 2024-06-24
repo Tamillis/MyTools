@@ -781,6 +781,7 @@ class PaginatorMaker {
             id: "paginatorMaker-" + Date.now(),
             parentSelector: "body",
             pageLength: 50,
+            fullDisplay: false,
             classes: {
                 container: ["navbar", "navbar-expand-sm"],
                 displayContainer: ["flex"],
@@ -873,7 +874,11 @@ class PaginatorMaker {
     getDisplay() {
         //get text
         let mainDisplay = document.createTextNode(`Page ${this.page} / ${this.pages}`);
-        let subDisplay = document.createTextNode(`(${this.Maker.activeData.length} row${this.Maker.activeData.length != 1 ? "s" : ""})`);
+        let subDisplay = "";
+        if (this.attributes.fullDisplay) subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`
+        subDisplay += ` (${this.Maker.activeData.length} shown)`;
+        subDisplay = document.createTextNode(subDisplay);
+
         //create html structure & apply styles
         let container = document.createElement("div");
         container.id = this.attributes.id + "-display";
