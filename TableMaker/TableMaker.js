@@ -269,7 +269,18 @@ class NMaker {
         return numberRangePicker;
     }
 
-    static makeMultiSelector(options, id, name) {
+    static makeMultiSelector(options, id, name, classes = {}, label = null) {
+        let defaultClasses = {
+            label: [],
+            container: ["container"],
+            display: ["form-control"],
+            selector: ["form-control"]
+        };
+
+        classes = {
+            ...defaultClasses, ...classes
+        }
+
         if (options == null || options.length == 0) {
             console.warn("makeMultiSelector() called without options, failed to make.");
             return;
@@ -278,6 +289,7 @@ class NMaker {
 
         let container = document.createElement("div");
         container.id = id + "-container";
+        NMaker.addStylesToElement(container, classes.container);
 
         //hidden input of csv's
         let input = document.createElement("input");
@@ -286,17 +298,27 @@ class NMaker {
         input.type = "hidden";
         container.appendChild(input);
 
+        //label
+        let labelEl = document.createElement("label");
+        labelEl.id = id + "-label";
+        if (label == null) label = NMaker.toCapitalizedWords(name);
+        labelEl.innerText = label;
+        NMaker.addStylesToElement(labelEl, classes.label);
+        container.appendChild(labelEl);
+
         //display output
         let output = document.createElement("input");
         output.id = id + "-output";
         output.readOnly = true;
         output.type = "text";
+        NMaker.addStylesToElement(container, classes.display);
         container.appendChild(output);
 
         //selection box of options
         let selector = document.createElement("select");
         selector.multiple = true;
         selector.style.overflowY = "auto";  //its a multiple select box, don't need scroll bars unless its too big
+        NMaker.addStylesToElement(container, classes.selector);
         for (let option of options) {
             let opt = document.createElement("option");
             opt.innerText = option;
@@ -1593,6 +1615,7 @@ class UpdaterMaker {
             parentSelector: "body",
             classes: {
                 container: ["row"],
+                btnContainer: ["btn-group"],
                 title: ["h3"],
                 form: [],
                 input: ["form-control"],
@@ -1726,11 +1749,14 @@ class UpdaterMaker {
         if (this.attributes.additional) {
             let data = this.attributes.additional;
             for (let key in data) {
-                let input = NMaker.makeElement("input", {id: NMaker.toKebabCase(key), name:key, value:data[key]});
+                let input = NMaker.makeElement("input", { id: NMaker.toKebabCase(key), name: key, value: data[key] });
                 input.type = "hidden";
                 form.appendChild(input);
             }
         }
+
+        //Add buttons
+        let btnContainer = NMaker.replaceElement(this.attributes.id + "-btn-container", "div", this.attributes.classes.btnContainer);
 
         //add submit button
         let submitBtn = document.createElement("input");
@@ -1739,7 +1765,7 @@ class UpdaterMaker {
         submitBtn.value = this.attributes.submitText;
         NMaker.addStylesToElement(submitBtn, this.attributes.classes.button);
         NMaker.addStylesToElement(submitBtn, this.attributes.classes.submit);
-        form.appendChild(submitBtn);
+        btnContainer.appendChild(submitBtn);
 
         //add cancel button
         let cancelBtn = document.createElement("button");
@@ -1754,7 +1780,9 @@ class UpdaterMaker {
             NMaker.dom(this.attributes.parentSelector).innerHTML = "";
             if (this.attributes.titleParentSelector) NMaker.dom(this.attributes.titleParentSelector).innerHTML = "";
         }
-        form.appendChild(cancelBtn);
+        btnContainer.appendChild(cancelBtn);
+
+        form.appendChild(btnContainer);
 
         updaterContainer.appendChild(form);
 
@@ -1859,12 +1887,16 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //switch on type
-        let input = NMaker.makeElement("input", {id:NMaker.toKebabCase(key), name:name, ...attributes, value:defaultVal}, this.attributes.classes.input);
+        let input = NMaker.makeElement("input", { id: NMaker.toKebabCase(key), name: name, ...attributes, value: defaultVal }, this.attributes.classes.input);
         switch (type) {
             case "string":
             case "text":
             case "null":
                 input.type = "text";
+                break;
+
+            case "email":
+                input.type = "email";
                 break;
 
             case "password":
