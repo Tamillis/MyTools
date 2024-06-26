@@ -150,8 +150,10 @@ this.attributeDefaults = {
     pageLength: 50,
     classes: {
         container: ["navbar", "navbar-expand-sm"],
+        displayContainer: ["flex"],
         button: ["btn", "btn-sm", "btn-outline-primary"],
-        p: ["navbar-brand", "mx-2"]
+        p: ["navbar-brand", "mx-2", "my-0", "text-center"],
+        small: ["w-100", "small", "text-center"]
     },
     buttons : NMaker.paginatorOptions.bookend
 };

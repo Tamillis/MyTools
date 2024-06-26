@@ -158,11 +158,12 @@ class NMaker {
         return el;
     }
 
-    static makeBtn(id, name, fn, classes = null, tooltip = null) {
+    static makeBtn(id, text, fn, classes = null, tooltip = null) {
         let btn = document.createElement("button");
         btn.id = id;
-        btn.innerText = name;
+        btn.innerText = text;
         btn.onclick = fn;
+        btn.type = "button";
         if (classes) NMaker.addStylesToElement(btn, classes);
         if (tooltip) btn.title = tooltip;
         return btn;
@@ -199,6 +200,18 @@ class NMaker {
         }
 
         return el;
+    }
+
+    static makeNullableDateInput(id, classes = {container: [], input: [], button: []}, value = null) {
+
+        let container = NMaker.makeElement("div", {}, classes.container);
+        let input = NMaker.makeElement("input", {type:"date", id:id, name:NMaker.toPascalCase(id) }, classes.input);
+        input.value = value;
+        let btn = NMaker.makeBtn(id + "-btn", "X", () => input.value = "", classes.button, "Clear date");
+        container.appendChild(input);
+        container.appendChild(btn);
+
+        return container;
     }
 
     static makeDateRangePicker(id, classes, lower = null, upper = null) {
@@ -323,7 +336,7 @@ class NMaker {
             let opt = document.createElement("option");
             opt.innerText = option;
             selector.appendChild(opt);
-            //cheeky use of the obj representing the node for tracking state
+            //cheeky use of the obj representing the select node for tracking state
             opt.addEventListener("mousedown", () => {
                 if (selector["NMaker_" + opt.innerText]) {
                     delete selector["NMaker_" + opt.innerText];
@@ -768,6 +781,7 @@ class PaginatorMaker {
             id: "paginatorMaker-" + Date.now(),
             parentSelector: "body",
             pageLength: 50,
+            fullDisplay: false,
             classes: {
                 container: ["navbar", "navbar-expand-sm"],
                 displayContainer: ["flex"],
@@ -860,7 +874,11 @@ class PaginatorMaker {
     getDisplay() {
         //get text
         let mainDisplay = document.createTextNode(`Page ${this.page} / ${this.pages}`);
-        let subDisplay = document.createTextNode(`(${this.Maker.activeData.length} row${this.Maker.activeData.length != 1 ? "s" : ""})`);
+        let subDisplay = "";
+        if (this.attributes.fullDisplay) subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`
+        subDisplay += ` (${this.Maker.activeData.length} shown)`;
+        subDisplay = document.createTextNode(subDisplay);
+
         //create html structure & apply styles
         let container = document.createElement("div");
         container.id = this.attributes.id + "-display";
@@ -1011,7 +1029,9 @@ class FilterMaker {
             if (this.attributes.useMemory && storedFilterIds !== null) {
                 storedFilterIds = storedFilterIds.split(',');
                 //get the value at the end of the last filter id
-                this.filterIdsNext = Number(storedFilterIds[storedFilterIds.length - 1].split('-')[1]) + 1;
+                let prevfilterIdParts = storedFilterIds[storedFilterIds.length - 1].split("-");
+                let numberPart = prevfilterIdParts[prevfilterIdParts.length - 1];
+                this.filterIdsNext = Number(numberPart) + 1;
             }
         }
         return this.attributes.id + "-" + this.filterIdsNext;
@@ -1019,7 +1039,10 @@ class FilterMaker {
 
     makeNewFilterId() {
         //fun fact, if this.filterIdsNext is 0 then !this.filterIdsNext is also true, so this is not the "present" check I thought it was
-        if (!this.hasOwnProperty('filterIdsNext')) this.filterIdsNext = Number(this.getNextFilterId().split("-")[1]);
+        if (!this.hasOwnProperty('filterIdsNext')) {
+            let parts = this.getNextFilterId().split("-");
+            this.filterIdsNext = Number(parts[parts.length-1]);
+        }
         else this.filterIdsNext++;
         return this.attributes.id + "-" + this.filterIdsNext;
     }
@@ -1046,7 +1069,11 @@ class FilterMaker {
 
     makeSubFilters() {
         //create subfilters if memory calls for them && subfilters are in use
-        if (this.attributes.useSubFilter && this.filterIds.length > 0) for (let i = 0; i < this.filterIds.length; i++) this.makeSubFilter(this.filterIds[i]);
+        if (this.attributes.useSubFilter && this.filterIds.length > 0) {
+            for (let i = 0; i < this.filterIds.length; i++) {
+                this.makeSubFilter(this.filterIds[i]);
+            }
+        }
         //else main filter is now just a new sub filter like any other
         else this.makeSubFilter();
 
@@ -1241,8 +1268,8 @@ class FilterMaker {
     }
 
     saveToStorage() {
-        //clear sessionStorage
-        sessionStorage.clear();
+        //clear sessionStorage of any items starting with the id, i.e. of this filter
+        NMaker.clearStorageOfId(this.attributes.id);
 
         for (let filterId of this.filterIds) {
             //record in memory
@@ -1428,6 +1455,7 @@ class FilterMaker {
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "date":
+            case "datetime":
                 input.type = "date";
                 if (NMaker.isDate(this.memory[id].lowerValue)) input.value = this.memory[id].lowerValue;
                 else input.value = new Date().toISOString().split('T')[0];
@@ -1749,7 +1777,7 @@ class UpdaterMaker {
         if (this.attributes.additional) {
             let data = this.attributes.additional;
             for (let key in data) {
-                let input = NMaker.makeElement("input", { id: NMaker.toKebabCase(key), name: key, value: data[key] });
+                let input = NMaker.makeElement("input", { id: this.attributes.id + "-" + NMaker.toKebabCase(key), name: key, value: data[key] });
                 input.type = "hidden";
                 form.appendChild(input);
             }
@@ -1802,7 +1830,13 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //text area
-        let input = NMaker.makeElement("textarea", { ...attributes, id: key, name: name, value: defaultVal }, this.attributes.classes.textarea);
+        let input = NMaker.makeElement("textarea",
+            {
+                ...attributes,
+                id: this.attributes.id + "-" + key,
+                name: name,
+                value: defaultVal
+            }, this.attributes.classes.textarea);
 
         if (this.attributes.readonly.includes(key)) input.readOnly = true;
 
@@ -1853,7 +1887,12 @@ class UpdaterMaker {
         selectContainer.appendChild(label);
 
         //and the select box itself
-        let select = NMaker.makeElement("select", { id: key, name: name, ...attributes, value: defaultVal }, this.attributes.classes.select);
+        let select = NMaker.makeElement("select",
+            {
+                id: this.attributes.id + "-" + key,
+                name: name, ...attributes,
+                value: defaultVal
+            }, this.attributes.classes.select);
 
         for (let opt of options) {
             let option = document.createElement("option");
@@ -1887,7 +1926,12 @@ class UpdaterMaker {
         label.innerText = labelText;
 
         //switch on type
-        let input = NMaker.makeElement("input", { id: NMaker.toKebabCase(key), name: name, ...attributes, value: defaultVal }, this.attributes.classes.input);
+        let input = NMaker.makeElement("input",
+            {
+                id: this.attributes.id + "-" + NMaker.toKebabCase(key),
+                name: name, ...attributes, value: defaultVal
+            },
+            this.attributes.classes.input);
         switch (type) {
             case "string":
             case "text":
