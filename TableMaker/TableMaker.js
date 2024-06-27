@@ -324,14 +324,14 @@ class NMaker {
         output.id = id + "-output";
         output.readOnly = true;
         output.type = "text";
-        NMaker.addStylesToElement(output, classes.display);
+        NMaker.addStylesToElement(container, classes.display);
         container.appendChild(output);
 
         //selection box of options
         let selector = document.createElement("select");
         selector.multiple = true;
         selector.style.overflowY = "auto";  //its a multiple select box, don't need scroll bars unless its too big
-        NMaker.addStylesToElement(selector, classes.selector);
+        NMaker.addStylesToElement(container, classes.selector);
         for (let option of options) {
             let opt = document.createElement("option");
             opt.innerText = option;
