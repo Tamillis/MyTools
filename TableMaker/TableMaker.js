@@ -514,9 +514,11 @@ class TableMaker {
             id: "t-" + Date.now(),
             classes: {
                 table: ["table", "table-bordered"],
+                tr: [],
+                th: [],
                 heading: ["h6", "text-center", "flex-fill", "me-2"],
                 headingContainer: ["d-flex", "flex-row", "justify-content-between"],
-                row: ["text-secondary"],
+                td: ["text-secondary"],
                 button: ["btn", "btn-sm", "btn-outline-primary"],
                 buttonGroup: ["btn-group"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
@@ -584,6 +586,7 @@ class TableMaker {
     generateTableHead() {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
+        NMaker.addStylesToElement(row, this.attributes.classes.tr);
         for (let heading of Object.keys(this.Maker.headings)) {
             if (this.attributes.hide && this.attributes.hide.includes(heading)) continue;
 
@@ -635,7 +638,7 @@ class TableMaker {
         NMaker.addStylesToElement(tbody, this.attributes.classes.tbody);
 
         for (let rowData of data) {
-            this.generateRow(tbody, rowData, this.attributes.classes.row);
+            this.generateRow(tbody, rowData);
         }
         return tbody;
     }
@@ -652,7 +655,7 @@ class TableMaker {
         return content;
     }
 
-    generateRow(tbody, rowData, classes) {
+    generateRow(tbody, rowData) {
         let tr = tbody.insertRow();
 
         for (let prop in rowData) {
@@ -660,7 +663,7 @@ class TableMaker {
 
             let td = document.createElement("td");
 
-            NMaker.addStylesToElement(td, classes);
+            NMaker.addStylesToElement(td, this.attributes.classes.td);
 
             //FORMAT DATA
             let cellData = rowData[prop];
@@ -716,7 +719,6 @@ class TableMaker {
 
             // Apply conditional class to tr of td if condition is met against the cell's data
             // condition must be stated as boolean expression of values and boolean operators and the heading of the cell under evaluation, key, which will be replaced with the actual value of the cell
-            // TODO Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
             if (this.attributes.conditionalClasses.hasOwnProperty(prop)) {
                 if (Array.isArray(this.attributes.conditionalClasses[prop])) {
                     for (let cc of this.attributes.conditionalClasses[prop]) {
@@ -731,6 +733,7 @@ class TableMaker {
     }
 
     addConditionalClass(data, tr, td, cc) {
+        // TODO: Fix replacing prop with prop where the beginning is the same (i.e. replacing ViewLinkNotFound being replaced by ViewLink, leaving NotFound floating...)
         //Replace any prop in the condition with the value of that prop
         for (let prop in data) {
             //check for dates
@@ -1350,6 +1353,8 @@ class FilterMaker {
         //then add options according to selected data type
         let type = this.Maker.colTypes[NMaker.dom(id + "-selector").value];
 
+        //TODO: Switch modifier options to be on a per-property basis, defaulting to these type options. Means modifier can be hidden if there's only one options set as well, simplifying the ui
+
         switch (type) {
             case "bigint":
             case "number":
@@ -1445,7 +1450,7 @@ class FilterMaker {
                 break;
             case "string":
                 input.type = "text";
-                if (!this.memory[id].lowerValue || this.memory[id].lowerValue == "") input.placeholder = "Select...";
+                if (!this.memory[id].lowerValue || this.memory[id].lowerValue == "") input.placeholder = "Search...";
                 else input.value = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
