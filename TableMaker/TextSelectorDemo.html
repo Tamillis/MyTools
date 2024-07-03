@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Selector Test</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+</head>
+
+<body class="container">
+    <h2 class="font-monospace">NMaker.makeTextSelect fn</h2>
+    <p>A demo for the 'MakeTextSelect' function which makes my so-called TextSelect element, a select input that behaves as a bound text box using a
+        datalist, but passes the appropriate ID into the hidden backing field.</p>
+
+    <datalist id="example">
+        <option data-id="1" value="First"></option>
+        <option data-id="2" value="Second"></option>
+        <option data-id="3" value="Third"></option>
+        <option data-id="99" value="Dio"></option>
+    </datalist>
+
+    <form id="test-form">
+
+        <div class="row">
+            <section id="container" class="col"></section>
+            <section id="container-2" class="col"></section>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <input type="submit" class="btn btn-primary mt-4 w-auto" value="See submission" />
+            </div>
+        </div>
+    </form>
+
+    <hr/>
+
+    <textarea id="output-area" class="form-control">Output...</textarea>
+
+    <script src="./TableMaker.js"></script>
+
+    <script>
+        NMaker.dom('test-form').addEventListener("keydown", (e) => e.keyCode === 13 ? e.preventDefault() : {});
+        NMaker.dom('test-form').addEventListener("submit", (e) => {
+            e.preventDefault();
+            let data = {};
+            for (let entry of new FormData(e.target).entries()) {
+                data[entry[0]] = entry[1];
+            }
+            NMaker.dom('output-area').innerText = JSON.stringify(data,null,4);
+        })
+
+        let ts = NMaker.makeTextSelect([{ id: "ttrpg weeb", value: "Tenra Bansho Zero" }, { id: "movie weeb", value: "Sen to Chihiro" }], { id: "array", label: "Provided array", value:"Sen" });
+        NMaker.dom('container').appendChild(ts);
+
+        let ts2 = NMaker.makeTextSelect('example', { id: "existing", label: "Existing datalist with no autocomplete", autocomplete:false });
+        NMaker.dom('container-2').appendChild(ts2);
+    </script>
+</body>
+
+</html>

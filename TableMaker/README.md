@@ -1,4 +1,7 @@
 # NMaker Utilities
+
+<img src="./favicon.ico"/>
+
 My own light JS Front End framework.
 
 The use case is simply: given a single lump of tabular JSON data, have a bunch of tools to efficiently and effectively present and manipulate that data, giving me full control over it and also cutting down on server calls by a lot. This is the result of that. It might seem a bit messy at times, and this README is certainly lacking in documentation (please refer to the .html demo's for more illustrative examples as they double as my test beds, and also just the source code), I do plan on properly updating this at some point.

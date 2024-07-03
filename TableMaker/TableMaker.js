@@ -149,6 +149,10 @@ class NMaker {
         if (Array.isArray(styles)) for (let style of styles) el.classList.add(style);
     }
 
+    static removeStylesFromElement(el, styles) {
+        if (Array.isArray(styles)) for (let style of styles) el.classList.remove(style);
+    }
+
     static replaceElement(id, kind, styles = null) {
         let el = NMaker.dom(id);
         if (el) el.parentElement.removeChild(el);
@@ -359,6 +363,145 @@ class NMaker {
                 if (selector["NMaker_" + option]) selected.push(option);
             }
             return selected;
+        }
+
+        return container;
+    }
+
+    static makeTextSelect(datalist, attributes = {}) {
+        let defaultAttributes = {
+            id: "ts-" + new Date().getTime(),
+            name: attributes.id ? NMaker.toPascalCase(attributes.id) : 'TextSelector',
+            label: "",
+            autocomplete: true,
+            classes: {
+                input: ["form-control"],
+                container: [],
+                label: [],
+                warning: ["text-danger"]
+            },
+            value: false
+        }
+
+        attributes = {
+            ...defaultAttributes,
+            ...attributes
+        };
+
+        //make container
+        let container = NMaker.replaceElement(attributes.id + "-container", "div", attributes.classes.container);
+
+        let data = [];
+
+        //check datalist is a string id of valid datalists
+        if (typeof datalist == "string") {
+            if (NMaker.dom(datalist) && NMaker.dom(datalist).tagName == "DATALIST") {
+                //construct data from identified datalist
+                for (let opt of NMaker.dom(datalist).children) {
+                    if (!(opt.dataset.hasOwnProperty("id") || opt.value == "")) {
+                        console.warn("Datalist lacking 'value' or 'data-id' attribute.");
+                        return;
+                    }
+                    data.push({ value: opt.value, id: opt.dataset.id })
+                }
+
+                //set datalist to the datalist element
+                datalist = NMaker.dom(datalist);
+            }
+            else {
+                console.warn(datalist + " is not the id of a datalist.");
+                return;
+            }
+        }
+        //or an array of valid composition ([{id: X, value: Y}, ...]), so an associated datalist has to be made for browser datalist suggestions to work
+        else if (Array.isArray(datalist)) {
+            for (let datum of datalist) {
+                if (typeof datum == "object" && datum.hasOwnProperty("id") && datum.hasOwnProperty("value")) {
+                    data.push({ value: datum.value, id: datum.id })
+                }
+                else {
+                    console.warn("Data provided in datalist has invalid properties, make sure datalist is an array of objects with the properties 'id' and 'value'", datalist);
+                    return;
+                }
+            }
+
+            //construct datalist
+            datalist = document.createElement("datalist");
+            datalist.id = attributes.id + "-datalist";
+            for(let datum of data) {
+                let opt = document.createElement("option");
+                opt.value = datum.value;
+                opt.dataset.id = datum.id;
+                datalist.appendChild(opt);
+            }
+            container.appendChild(datalist);
+        }
+
+        //make backing input
+        let backingInput = NMaker.makeElement("input", { id: attributes.id + "-input", name: attributes.name, type: "hidden" });
+        container.appendChild(backingInput);
+
+        //if label
+        if (attributes.label != "") {
+            let label = NMaker.makeElement("label", { htmlFor: attributes.id + "-text-input" }, attributes.classes.label);
+            label.innerText = attributes.label;
+            container.appendChild(label);
+        }
+
+        //make text input
+        let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
+        textInput.setAttribute("list", datalist.id);
+
+        //save prior input to reset with if necessary
+        let priorInput = "";
+        textInput.addEventListener("beforeinput", (e) => priorInput = e.target.value);
+
+        //check input matches text, put that text's associated value in the backingInput
+        textInput.addEventListener("input", (e) => {
+            let possibilities = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
+
+            if (possibilities.length == 0) {
+                textInput.value = priorInput;
+                NMaker.addStylesToElement(textInput, attributes.classes.warning);
+            }
+            else {
+                backingInput.value = possibilities[0].id;
+                NMaker.removeStylesFromElement(textInput, attributes.classes.warning);
+            }
+        });
+
+        //remove danger highlight on focusout
+        textInput.addEventListener("focusout", () => NMaker.removeStylesFromElement(textInput, attributes.classes.warning), true);
+
+        //autocomplete ensures that when the user clicks off, a full list value is overwritten into the target input
+        //set id input to corresponding list value
+        if (attributes.autocomplete) {
+            let update = () => {
+                let matchingOptions = data.filter(datum => datum.value.includes(textInput.value));
+                if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
+                textInput.value = matchingOptions.length == 0 ? data[0].value : matchingOptions[0].value;
+            }
+            textInput.addEventListener("focusout", update, true);
+            textInput.addEventListener("keydown", (e) => {
+                if(e.keyCode === 13) {
+                    e.preventDefault();
+                    update();
+                }
+            }, true);
+        }
+
+        container.appendChild(textInput);
+
+        //if there's an initial value, set that
+        if (attributes.value) {
+            //find
+            textInput.value = attributes.value;
+        }
+
+        //and autofill if autocompleting
+        if (attributes.autocomplete) {
+            textInput.dispatchEvent(new Event("input"));
+            textInput.dispatchEvent(new Event("focusout"));
         }
 
         return container;
