@@ -3,19 +3,19 @@ class NMaker {
         equals: "=",
         greaterThan: ">",
         lessThan: "<",
-        not: "Not",
-        numberRange: "Between",
-        match: "Matches",
-        contains: "Contains",
-        startsWith: "Starts with",
-        excludes: "Excludes",
-        date: "Date",
-        dateRange: "From -> To",
-        before: "Before",
-        after: "After",
-        boolean: "Boolean",
-        select: "Select",
-        empty: "Empty"
+        not: "is not",
+        numberRange: "is in the range",
+        match: "matches",
+        contains: "contains",
+        startsWith: "starts with",
+        excludes: "excludes",
+        date: "is the date",
+        dateRange: "is between",
+        before: "is before",
+        after: "is after",
+        boolean: "is",
+        select: "is one of",
+        empty: "is empty"
     });
     static paginatorOptions = Object.freeze({
         bookend: "Bookend",
@@ -206,10 +206,10 @@ class NMaker {
         return el;
     }
 
-    static makeNullableDateInput(id, classes = {container: [], input: [], button: []}, value = null) {
+    static makeNullableDateInput(id, classes = { container: [], input: [], button: [] }, value = null) {
 
         let container = NMaker.makeElement("div", {}, classes.container);
-        let input = NMaker.makeElement("input", {type:"date", id:id, name:NMaker.toPascalCase(id) }, classes.input);
+        let input = NMaker.makeElement("input", { type: "date", id: id, name: NMaker.toPascalCase(id) }, classes.input);
         input.value = value;
         let btn = NMaker.makeBtn(id + "-btn", "X", () => input.value = "", classes.button, "Clear date");
         container.appendChild(input);
@@ -243,7 +243,7 @@ class NMaker {
 
         let toDateLabel = document.createElement("label");
         toDateLabel.innerText = "→";
-        toDateLabel.for = toDateInput.id;
+        toDateLabel.htmlFor = toDateInput.id;
         NMaker.addStylesToElement(toDateLabel, classes.label);
 
         dateRangePicker.appendChild(fromDateInput);
@@ -428,7 +428,7 @@ class NMaker {
             //construct datalist
             datalist = document.createElement("datalist");
             datalist.id = attributes.id + "-datalist";
-            for(let datum of data) {
+            for (let datum of data) {
                 let opt = document.createElement("option");
                 opt.value = datum.value;
                 opt.dataset.id = datum.id;
@@ -483,7 +483,7 @@ class NMaker {
             }
             textInput.addEventListener("focusout", update, true);
             textInput.addEventListener("keydown", (e) => {
-                if(e.keyCode === 13) {
+                if (e.keyCode === 13) {
                     e.preventDefault();
                     update();
                 }
@@ -616,6 +616,7 @@ class Maker {
         if (this.table) {
             //reset active data
             if (data) this.activeData = data;
+            else if (this.useInitialData) this.activeData = this.initialData;
             else this.activeData = this.getFilteredData();
 
             if (this.filter) this.filter.makeFilter();
@@ -662,8 +663,13 @@ class TableMaker {
                 heading: ["h6", "text-center", "flex-fill", "me-2"],
                 headingContainer: ["d-flex", "flex-row", "justify-content-between"],
                 td: ["text-secondary"],
-                button: ["btn", "btn-sm", "btn-outline-primary"],
+                button: ["btn", "btn-sm", "btn-outline-primary", "height-auto"],
                 buttonGroup: ["btn-group"],
+                removeBtn: ["btn-outline-danger"],
+                controlsContainer: ["d-flex", "mx-2"],
+                controls: ["btn-group"],
+                controlBtn: ["btn", "btn-sm", "btn-outline-light"],
+                resetIcon: ["bi", "bi-reply-all"],
                 link: ["btn", "btn-sm", "btn-outline-info"]
             },
             conditionalClasses: false,
@@ -671,6 +677,7 @@ class TableMaker {
             sorting: false,
             noSorting: false,
             sortingOrientation: {},
+            useReset: false,
             currency: false,
             link: false
         };
@@ -726,7 +733,7 @@ class TableMaker {
         }, this.attributes.classes.button);
     }
 
-    generateTableHead() {
+    makeTableHead() {
         let thead = this.table.createTHead();
         let row = thead.insertRow();
         NMaker.addStylesToElement(row, this.attributes.classes.tr);
@@ -763,7 +770,7 @@ class TableMaker {
                 let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
                     this.Maker.hiddenHeadings.push(heading);
                     this.Maker.build();
-                }, this.attributes.classes.button);
+                }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn));
                 btnContainer.appendChild(hideBtn);
             }
 
@@ -776,7 +783,7 @@ class TableMaker {
     }
 
 
-    generateTableBody(data) {
+    makeTableBody(data) {
         let tbody = this.table.createTBody();
         NMaker.addStylesToElement(tbody, this.attributes.classes.tbody);
 
@@ -826,6 +833,10 @@ class TableMaker {
             if (cellData instanceof Date) {
                 if (this.Maker.colTypes[prop] == "date") cellData = document.createTextNode(cellData.toLocaleDateString());
                 else if (["datetime", "datetime-local"].includes(this.Maker.colTypes[prop])) cellData = document.createTextNode(cellData.toLocaleString());
+                else {
+                    //type has not been correctly set, just print
+                    cellData = document.createTextNode(cellData);
+                }
             }
 
             //Currency
@@ -906,17 +917,73 @@ class TableMaker {
         }
     }
 
+    makeShowBtn() {
+        //show button, which is a select box whose first option is the btn icon, and whose selections get put into the hiddenHeadings list, the select box itself resetting.
+        let showBtn = NMaker.makeElement(
+            "select",
+            {
+                id: this.attributes.id + "-show",
+                title: "Select hidden columns to show"
+            },
+            this.attributes.classes.controlBtn);
+
+        let defaultOption = document.createElement("option");
+        defaultOption.innerText = "👁 Cols";
+        defaultOption.style.display = "none";
+        defaultOption.selected = true;
+        showBtn.appendChild(defaultOption);
+
+        for (let heading of NMaker.sort(this.Maker.hiddenHeadings, this.attributes.order)) {
+            let opt = document.createElement("option");
+            opt.value = heading;
+            opt.innerText = this.Maker.headings[heading];
+            showBtn.appendChild(opt);
+        }
+        showBtn.onchange = () => {
+            this.Maker.hiddenHeadings = this.Maker.hiddenHeadings.filter(h => h !== showBtn.value);
+            showBtn.value = showBtn.firstElementChild.value;
+            this.Maker.build();
+        }
+
+        return showBtn;
+    }
+
+    makeResetBtn() {
+        let resetBtn = NMaker.makeBtn(
+            this.attributes.id + "-reset-btn", "",
+            () => {
+                //reset tabular data
+                this.Maker.useInitialData = true;
+                this.Maker.build(this.Maker.initialData);
+            },
+            this.attributes.classes.controlBtn);
+        resetBtn.title = "Show all data";
+        resetBtn.innerHTML = '&#x21ba; All';
+        return resetBtn;
+    }
+
+    makeButtonControls() {
+        let controlBtnsContainer = NMaker.replaceElement(this.attributes.id + "-controls-container", "div", this.attributes.classes.controlsContainer);
+        let controlBtnsGroup = NMaker.replaceElement(this.attributes.id + "-controls-btn-group", "div", this.attributes.classes.controls);
+
+        //tabular reset button to show all rows regardless of any filter
+        if (this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
+
+        if (this.attributes.hide) controlBtnsGroup.appendChild(this.makeShowBtn());
+
+        controlBtnsContainer.appendChild(controlBtnsGroup);
+        NMaker.dom(this.attributes.parentSelector).appendChild(controlBtnsContainer);
+    }
+
     makeTable(data) {
-        this.table = NMaker.replaceElement(this.attributes.id, "table");
-
-
-        NMaker.addStylesToElement(this.table, this.attributes.classes.table)
-
-        NMaker.dom(this.attributes.parentSelector).appendChild(this.table);
+        this.table = NMaker.replaceElement(this.attributes.id, "table", this.attributes.classes.table);
 
         this.attributes.hide = this.Maker.hiddenHeadings;
-        this.generateTableHead();
-        this.generateTableBody(data);
+        this.makeButtonControls();
+        this.makeTableHead();
+        this.makeTableBody(data);
+
+        NMaker.dom(this.attributes.parentSelector).appendChild(this.table);
     }
 }
 
@@ -1021,8 +1088,11 @@ class PaginatorMaker {
         //get text
         let mainDisplay = document.createTextNode(`Page ${this.page} / ${this.pages}`);
         let subDisplay = "";
-        if (this.attributes.fullDisplay) subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`
-        subDisplay += ` (${this.Maker.activeData.length} shown)`;
+        if (this.attributes.fullDisplay) {
+            if (this.Maker.useInitialData) subDisplay = this.Maker.initialData.length + " rows";
+            else subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`;
+        }
+        subDisplay += ` (${this.Maker.activeData.length} shown)\n`;
         subDisplay = document.createTextNode(subDisplay);
 
         //create html structure & apply styles
@@ -1051,20 +1121,24 @@ class FilterMaker {
             classes: {
                 container: ["mb-2", "d-flex", "g-2"],
                 filterContainer: ["flex-grow-1"],
-                button: ["btn", "btn-sm", "btn-outline-primary"],
+                button: ["btn", "btn-sm"],
+                utilityBtn: ["btn-outline-secondary"],
+                removeBtn: ["btn-danger"],
+                addBtn: ["btn-success"],
                 buttonGroup: ["btn-group", "px-2"],
-                label: ["input-group-text"],
                 checkbox: ["form-check-input"],
-                selectionContainer: ["px-2"],
-                selector: ["form-select"],
+                selector: ["form-select", "col"],
+                selectionContainer: ["mx-2", "d-flex", "g-2", "align-items-baseline"],
                 modifier: ["form-select"],
+                label: ["mx-2"],
                 inputContainer: ["flex-grow-1"],
-                input: ["form-control"],
-                inputGroup: ["input-group"],
+                input: ["form-control", "flex-grow-1"],
+                inputGroup: ["mx-1", "d-flex", "align-items-baseline"],
                 dateRange: ["input-group"]
             },
             ignore: false,
             order: NMaker.sortOptions.original,
+            verbose: false, //accepts the object {col: ColumntTextHere, mod: ModifierTextHere}
             useModifier: false,
             modifiers: {
                 number: [NMaker.filterOptions.equals, NMaker.filterOptions.greaterThan, NMaker.filterOptions.lessThan, NMaker.filterOptions.not, NMaker.filterOptions.numberRange],
@@ -1073,7 +1147,7 @@ class FilterMaker {
                 boolean: [NMaker.filterOptions.boolean]
             },
             useSubFilter: false,
-            useMemory: false,
+            useReset: false,
             defaultSettings: {
                 selection: Object.keys(Maker.data[0])[0],
                 option: NMaker.filterOptions.contains,
@@ -1087,6 +1161,13 @@ class FilterMaker {
             ...attributes
         }
 
+        //set reset settings to default settings
+        if (!attributes.resetSettings) {
+            this.attributes.resetSettings = Array.isArray(this.attributes.defaultSettings) ?
+                [...this.attributes.defaultSettings] :
+                { ...this.attributes.defaultSettings };
+        }
+
         this.attributes.classes = {
             ...this.attributeDefaults.classes,
             ...attributes.classes
@@ -1094,7 +1175,7 @@ class FilterMaker {
 
         this.attributes.modifiers = {
             ...this.attributeDefaults.modifiers,
-            ...attributes.modifier
+            ...attributes.modifiers
         }
 
         this.attributes.defaultSettings = attributes.defaultSettings ?? this.attributeDefaults.defaultSettings;
@@ -1108,7 +1189,7 @@ class FilterMaker {
         //make filterIds from storage if using memory, 
         this.filterIds = [];
         let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
-        if (this.attributes.useMemory && storedFilterIds !== null) {
+        if (storedFilterIds !== null) {
             //if using subfilter, multiple storedFilerIds is ok            
             if (this.attributes.useSubFilter) {
                 this.filterIds = storedFilterIds.split(",");
@@ -1120,7 +1201,7 @@ class FilterMaker {
         }
 
         //if stored filters found, set memory from associated stored values
-        if (this.attributes.useMemory && this.filterIds.length > 0) {
+        if (this.filterIds.length > 0) {
             for (let i = 0; i < this.filterIds.length; i++) {
                 this.memory[this.filterIds[i]] = {
                     selection: sessionStorage.getItem(this.filterIds[i] + "-filter-memory-selection") ?? Object.keys(this.Maker.data[0])[0],
@@ -1136,32 +1217,32 @@ class FilterMaker {
             }
         } else {
             //storage memory should override defaults, but if none are found those defaults need to be kept.
-            this.initiateMemory();
-            this.saveToStorage();
+            this.setMemoryFromSettings();
+            this.saveMemoryToStorage();
         }
     }
 
-    initiateMemory() {
+    setMemoryFromSettings(settings) {
+        if (settings == null) settings = this.attributes.defaultSettings;
+
         //assuming no memory, so need to reset filterids as well
         this.filterIds = [];
         this.memory = {};
 
         //if defaultSettings is array, for multiple filter defaults
-        if (Array.isArray(this.attributes.defaultSettings)) {
+        if (Array.isArray(settings)) {
             //Check if SubFilters are also in use, if not these defaults are not OK
             if (!this.attributes.useSubFilter) throw new Error("Cannot use multiple filter default unless useSubFilter is true");
 
-            for (let set of this.attributes.defaultSettings) {
+            for (let set of settings) {
                 this.filterIds.push(this.makeNewFilterId());
                 this.memory[this.filterIds[this.filterIds.length - 1]] = set;
             }
-            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds.reduce((acc, curr) => acc + "," + curr));
         }
         //else for a single filter default
         else {
             this.filterIds = [this.getNextFilterId()];
-            this.memory[this.filterIds[0]] = this.attributes.defaultSettings;
-            sessionStorage.setItem(this.attributes.id + "-ids", this.filterIds[0]);
+            this.memory[this.filterIds[0]] = settings;
         }
     }
 
@@ -1172,7 +1253,7 @@ class FilterMaker {
 
             //if using memory get next filter id after stored ids, if such exist
             let storedFilterIds = sessionStorage.getItem(this.attributes.id + "-ids");
-            if (this.attributes.useMemory && storedFilterIds !== null) {
+            if (storedFilterIds !== null) {
                 storedFilterIds = storedFilterIds.split(',');
                 //get the value at the end of the last filter id
                 let prevfilterIdParts = storedFilterIds[storedFilterIds.length - 1].split("-");
@@ -1184,10 +1265,9 @@ class FilterMaker {
     }
 
     makeNewFilterId() {
-        //fun fact, if this.filterIdsNext is 0 then !this.filterIdsNext is also true, so this is not the "present" check I thought it was
         if (!this.hasOwnProperty('filterIdsNext')) {
             let parts = this.getNextFilterId().split("-");
-            this.filterIdsNext = Number(parts[parts.length-1]);
+            this.filterIdsNext = Number(parts[parts.length - 1]);
         }
         else this.filterIdsNext++;
         return this.attributes.id + "-" + this.filterIdsNext;
@@ -1207,7 +1287,7 @@ class FilterMaker {
         container.appendChild(filterContainer);
 
         //make the button controls (add subfilter, reset button, search button)
-        let btnControls = this.makeBtnControlsContainer();
+        let btnControls = this.makeBtnControls();
         container.appendChild(btnControls);
 
         this.makeSubFilters();
@@ -1246,7 +1326,7 @@ class FilterMaker {
                 this.filterIds = this.filterIds.filter(filterId => filterId !== id);
                 NMaker.dom(id).remove();
                 this.toggleRemoveBtns();
-            }, this.attributes.classes.button, "Remove filter");
+            }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn), "Remove filter");
             container.appendChild(removeBtn);
         }
 
@@ -1264,6 +1344,7 @@ class FilterMaker {
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
             this.makeModifierOptions(id);
+
         }
         else {
             this.makeSimpleInputGroup(id);
@@ -1289,6 +1370,16 @@ class FilterMaker {
         //selection container
         let selectionContainer = NMaker.replaceElement(id + "-selection-container", "div", this.attributes.classes.selectionContainer);
 
+        //label
+        if (this.attributes.verbose) {
+            //make col label
+            let colLabel = NMaker.makeElement("label", { htmlFor: id + "-selector", innerText: "Column" }, this.attributes.classes.label);
+            if (this.attributes.verbose.hasOwnProperty("col")) {
+                colLabel.innerText = this.attributes.verbose.col;
+            }
+            selectionContainer.appendChild(colLabel);
+        }
+
         //selector input group
         let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.inputGroup);
 
@@ -1296,23 +1387,36 @@ class FilterMaker {
         let selector = this.makeSelector(id);
         selectionInputGroup.appendChild(selector);
 
-        //create the modifier if wanted
-        if (this.attributes.useModifier) {
-            let modifier = this.makeModifier(id);
-            selectionInputGroup.appendChild(modifier);
-        }
 
         selectionContainer.appendChild(selectionInputGroup);
+
+        //don't create the modifier if not wanted
+        if (!this.attributes.useModifier) return selectionContainer;
+
+        //label
+        if (this.attributes.verbose) {
+            //make modifier label
+            let modLabel = NMaker.makeElement("label", { htmlFor: id + "-modifier", innerText: "which" }, this.attributes.classes.label);
+            if (this.attributes.verbose.hasOwnProperty("mod")) modLabel.innerText = this.attributes.verbose.mod;
+            selectionContainer.appendChild(modLabel);
+        }
+
+        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.inputGroup);
+        modifierInputGroup.appendChild(this.makeModifier(id));
+
+        //TODO: put 'makeModifierOptions' here?
+
+        selectionContainer.appendChild(modifierInputGroup);
 
         return selectionContainer;
     }
 
-    makeBtnControlsContainer() {
+    makeBtnControls() {
         //btn group container
         let btnControlsContainer = NMaker.replaceElement(this.attributes.id + "-btn-controls-container", "div", this.attributes.classes.buttonGroup);
 
+        //add filter button
         if (this.attributes.useSubFilter) {
-            //add filter button
             let addBtn = NMaker.makeBtn(this.attributes.id + "-add", "+", () => {
                 //generate new id
                 this.filterIds.push(this.makeNewFilterId());
@@ -1329,54 +1433,31 @@ class FilterMaker {
                 this.makeSubFilter(this.filterIds[this.filterIds.length - 1]);
 
                 //saveToStorage to propogate new subfilter
-                this.saveToStorage();
+                this.saveMemoryToStorage();
 
                 //toggle presence of remove btns
                 this.toggleRemoveBtns();
 
-            }, this.attributes.classes.button, "Add filter");
+            }, this.attributes.classes.button.concat(this.attributes.classes.addBtn), "Add filter");
             btnControlsContainer.appendChild(addBtn);
         }
 
-        //reset button
-        let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
-            //clear sessionStorage of relevant items
-            NMaker.clearStorageOfId(this.attributes.id);
-            //hard reset data
-            this.Maker.activeData = this.Maker.initialData;
+        //reset button - resets filters to resetSettings, which defaults to defaultSettings
+        if (this.attributes.useReset) {
+            let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
+                //clear sessionStorage of relevant items
+                NMaker.clearStorageOfId(this.attributes.id);
+                // //hard reset data
+                // this.Maker.activeData = this.Maker.initialData;
 
-            //reset cols
-            if (this.Maker.hiddenHeadings) this.Maker.hiddenHeadings = [...this.Maker.initialHiddenHeadings];
-            //dispatch events to update filter and table
-            this.Maker.build(this.Maker.activeData);
-        }, this.attributes.classes.button, "Reset table")
-        btnControlsContainer.appendChild(resetBtn);
+                //set filter to blank
+                this.setMemoryFromSettings(this.attributes.resetSettings);
+                this.saveMemoryToStorage();
 
-        if (this.Maker.hiddenHeadings) {
-            //show button, which is a select box whose first option is the btn icon, and whose selections get put into the hiddenHeadings list, the select box itself resetting.
-            let showBtn = document.createElement("select");
-            showBtn.id = this.attributes.id + "-show";
-            showBtn.title = "Select hidden columns to show";
-            let defaultOption = document.createElement("option");
-            defaultOption.innerText = "👁";
-            defaultOption.style.display = "none";
-            defaultOption.selected = true;
-            showBtn.appendChild(defaultOption);
-
-            for (let heading of NMaker.sort(this.Maker.hiddenHeadings, this.attributes.order)) {
-                let opt = document.createElement("option");
-                opt.value = heading;
-                opt.innerText = this.Maker.headings[heading];
-                showBtn.appendChild(opt);
-            }
-            showBtn.onchange = () => {
-                this.Maker.hiddenHeadings = this.Maker.hiddenHeadings.filter(h => h !== showBtn.value);
-                showBtn.value = showBtn.firstElementChild.value;
+                //build reset filters from storage
                 this.Maker.build();
-            }
-            NMaker.addStylesToElement(showBtn, this.attributes.classes.button);
-
-            btnControlsContainer.appendChild(showBtn);
+            }, this.attributes.classes.button.concat(this.attributes.classes.utilityBtn), "Reset filters to settings")
+            btnControlsContainer.appendChild(resetBtn);
         }
 
         //make the search button
@@ -1413,7 +1494,7 @@ class FilterMaker {
         }
     }
 
-    saveToStorage() {
+    saveMemoryToStorage() {
         //clear sessionStorage of any items starting with the id, i.e. of this filter
         NMaker.clearStorageOfId(this.attributes.id);
 
@@ -1434,10 +1515,11 @@ class FilterMaker {
             this.setMemoryFromFilters();
 
             //save memory to storage for rebuild post-search
-            this.saveToStorage();
+            this.saveMemoryToStorage();
 
+            this.Maker.useInitialData = false;
             this.Maker.build();
-        }, this.attributes.classes.button, "Search in the table");
+        }, this.attributes.classes.button.concat(this.attributes.classes.utilityBtn), "Search in the table");
     }
 
     makeModifier(id) {
@@ -1446,6 +1528,7 @@ class FilterMaker {
         modifier.id = id + "-modifier";
         modifier.title = "How to filter by";
         modifier.onchange = () => {
+            //this is the 'MakeModifiedInput' pair to 'MakeSimpleInput'
             if (modifier.value == NMaker.filterOptions.dateRange) this.makeDateRangeInputGroup(id);
             else if (modifier.value == NMaker.filterOptions.select) this.makeSelectInput(id);
             else if (modifier.value == NMaker.filterOptions.numberRange) this.makeNumberRangeInputGroup(id);
@@ -1493,39 +1576,42 @@ class FilterMaker {
             modifier.removeChild(modifier.lastChild);
         }
 
-        //then add options according to selected data type
-        let type = this.Maker.colTypes[NMaker.dom(id + "-selector").value];
+        //then add options according to the attributes (defaulting to work by data type)
+        let col = NMaker.dom(id + "-selector").value;
 
-        //TODO: Switch modifier options to be on a per-property basis, defaulting to these type options. Means modifier can be hidden if there's only one options set as well, simplifying the ui
-
-        switch (type) {
-            case "bigint":
-            case "number":
-                this.attachOptions(modifier, this.attributes.modifiers.number, this.memory[id].option);
-                break;
-            case "string":
-                this.attachOptions(modifier, this.attributes.modifiers.string, this.memory[id].option);
-                break;
-            case "boolean":
-                this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
-                break;
-            case "date":
-            case "datetime":
-                this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
-                break;
-            case "object":
-                console.warn("Invalid object value found");
-                this.Maker.colTypes[NMaker.dom(id + "-selector").value] = "string";
-                this.attachOptions(modifier, this.attributes.modifiers.string, NMaker.filterOptions.contains);
-                break;
-            case "undefined":
-                console.error("Value is undefined");
-                break;
+        if (this.attributes.modifiers.hasOwnProperty(col)) {
+            //set modifiers to that list
+            this.attachOptions(modifier, this.attributes.modifiers[col], this.memory[id].option);
         }
+        else {
 
-        if (modifier.childNodes.length <= 1) {
-            modifier.hidden = true;
-            modifier.style.display = "none";
+            //then add options according to selected data type
+            let type = this.Maker.colTypes[col];
+
+            switch (type) {
+                case "bigint":
+                case "number":
+                    this.attachOptions(modifier, this.attributes.modifiers.number, this.memory[id].option);
+                    break;
+                case "string":
+                    this.attachOptions(modifier, this.attributes.modifiers.string, this.memory[id].option);
+                    break;
+                case "boolean":
+                    this.attachOptions(modifier, this.attributes.modifiers.boolean, this.memory[id].option);
+                    break;
+                case "date":
+                case "datetime":
+                    this.attachOptions(modifier, this.attributes.modifiers.date, this.memory[id].option);
+                    break;
+                case "object":
+                    console.warn("Invalid object value found");
+                    this.Maker.colTypes[NMaker.dom(id + "-selector").value] = "string";
+                    this.attachOptions(modifier, this.attributes.modifiers.string, NMaker.filterOptions.contains);
+                    break;
+                case "undefined":
+                    console.error("Value is undefined");
+                    break;
+            }
         }
 
         modifier.onchange();
