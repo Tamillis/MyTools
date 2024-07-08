@@ -328,14 +328,14 @@ class NMaker {
         output.id = id + "-output";
         output.readOnly = true;
         output.type = "text";
-        NMaker.addStylesToElement(container, classes.display);
+        NMaker.addStylesToElement(output, classes.display);
         container.appendChild(output);
 
         //selection box of options
         let selector = document.createElement("select");
         selector.multiple = true;
         selector.style.overflowY = "auto";  //its a multiple select box, don't need scroll bars unless its too big
-        NMaker.addStylesToElement(container, classes.selector);
+        NMaker.addStylesToElement(selector, classes.selector);
         for (let option of options) {
             let opt = document.createElement("option");
             opt.innerText = option;
@@ -622,8 +622,14 @@ class Maker {
             if (this.filter) this.filter.makeFilter();
 
             if (this.paginator) {
-                this.activeData = this.paginator.getPagedData(this.activeData);
-                this.paginator.makePaginator();
+                if (this.paginator.attributes.pageLength >= (this.useInitialData ? this.initialData.length : this.getFilteredData().length)) {
+                    //just clear the paginator from the screen
+                    dom(this.paginator.attributes.parentSelector).innerHTML = '';
+                }
+                else {
+                    this.activeData = this.paginator.getPagedData(this.activeData);
+                    this.paginator.makePaginator();
+                }
             }
 
             this.table.makeTable(this.activeData);
@@ -677,7 +683,8 @@ class TableMaker {
             sorting: false,
             noSorting: false,
             sortingOrientation: {},
-            useReset: false,
+            useReset: true,
+            useShow: true,
             currency: false,
             link: false
         };
@@ -967,9 +974,9 @@ class TableMaker {
         let controlBtnsGroup = NMaker.replaceElement(this.attributes.id + "-controls-btn-group", "div", this.attributes.classes.controls);
 
         //tabular reset button to show all rows regardless of any filter
-        if (this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
+        if (this.Maker.filter && this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
 
-        if (this.attributes.hide) controlBtnsGroup.appendChild(this.makeShowBtn());
+        if (this.attributes.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
 
         controlBtnsContainer.appendChild(controlBtnsGroup);
         NMaker.dom(this.attributes.parentSelector).appendChild(controlBtnsContainer);
@@ -1381,7 +1388,7 @@ class FilterMaker {
         }
 
         //selector input group
-        let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.inputGroup);
+        let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.selectionGroup);
 
         //property dropdown 'selector'
         let selector = this.makeSelector(id);
@@ -1401,10 +1408,8 @@ class FilterMaker {
             selectionContainer.appendChild(modLabel);
         }
 
-        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.inputGroup);
+        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.selectionGroup);
         modifierInputGroup.appendChild(this.makeModifier(id));
-
-        //TODO: put 'makeModifierOptions' here?
 
         selectionContainer.appendChild(modifierInputGroup);
 
@@ -1612,6 +1617,23 @@ class FilterMaker {
                     console.error("Value is undefined");
                     break;
             }
+        }
+
+        let modGroup = NMaker.dom(id + "-modifier-group");
+        if (modifier.children.length <= 1) {
+            modGroup.style.hidden = true;
+            modGroup.style.display = "none";
+            modifier.labels.forEach(l => {
+                l.style.hidden = true;
+                l.style.display = "none";
+            });
+        } else {
+            modGroup.style.hidden = false;
+            modGroup.style.display = "inline-block";
+            modifier.labels.forEach(l => {
+                l.style.hidden = false;
+                l.style.display = "inline-block";
+            });
         }
 
         modifier.onchange();
