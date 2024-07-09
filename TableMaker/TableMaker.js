@@ -373,6 +373,7 @@ class NMaker {
             id: "ts-" + new Date().getTime(),
             name: attributes.id ? NMaker.toPascalCase(attributes.id) : 'TextSelector',
             label: "",
+            placeholder: false,
             autocomplete: true,
             classes: {
                 input: ["form-control"],
@@ -380,13 +381,19 @@ class NMaker {
                 label: [],
                 warning: ["text-danger"]
             },
-            value: false
+            value: false,
+            defaultValue: false //what to use if a user enters something that doesn't exist
         }
 
         attributes = {
             ...defaultAttributes,
             ...attributes
         };
+        
+        attributes.classes = {
+            ...defaultAttributes.classes,
+            ...attributes.classes
+        }
 
         //make container
         let container = NMaker.replaceElement(attributes.id + "-container", "div", attributes.classes.container);
@@ -438,7 +445,7 @@ class NMaker {
         }
 
         //make backing input
-        let backingInput = NMaker.makeElement("input", { id: attributes.id + "-input", name: attributes.name, type: "hidden" });
+        let backingInput = NMaker.makeElement("input", { id: attributes.id, name: attributes.name, type: "hidden" });
         container.appendChild(backingInput);
 
         //if label
@@ -450,6 +457,7 @@ class NMaker {
 
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
+        if(attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -477,9 +485,11 @@ class NMaker {
         //set id input to corresponding list value
         if (attributes.autocomplete) {
             let update = () => {
-                let matchingOptions = data.filter(datum => datum.value.includes(textInput.value));
+                let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
-                textInput.value = matchingOptions.length == 0 ? data[0].value : matchingOptions[0].value;
+                textInput.value = matchingOptions.length == 0 ? 
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) : 
+                    matchingOptions[0].value;
             }
             textInput.addEventListener("focusout", update, true);
             textInput.addEventListener("keydown", (e) => {
@@ -624,7 +634,7 @@ class Maker {
             if (this.paginator) {
                 if (this.paginator.attributes.pageLength >= (this.useInitialData ? this.initialData.length : this.getFilteredData().length)) {
                     //just clear the paginator from the screen
-                    dom(this.paginator.attributes.parentSelector).innerHTML = '';
+                    NMaker.dom(this.paginator.attributes.parentSelector).innerHTML = '';
                 }
                 else {
                     this.activeData = this.paginator.getPagedData(this.activeData);
@@ -768,6 +778,7 @@ class TableMaker {
                 if (this.attributes.sortingOrientation[heading] == null) this.attributes.sortingOrientation[heading] = "unset";
 
                 let btn = this.addSortBtn(heading);
+                btn.title = "Click to sort by this column";
                 NMaker.addStylesToElement(btn, this.attributes.classes.button);
                 btnContainer.appendChild(btn);
             }
@@ -778,6 +789,7 @@ class TableMaker {
                     this.Maker.hiddenHeadings.push(heading);
                     this.Maker.build();
                 }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn));
+                hideBtn.title = "Click to hide this columns, show again with the 👁 Cols button";
                 btnContainer.appendChild(hideBtn);
             }
 
@@ -898,10 +910,10 @@ class TableMaker {
         //Replace any prop in the condition with the value of that prop
         for (let prop in data) {
             //check for dates
-            if (data[prop] !== null && this.Maker.colTypes[prop] == "date") cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
+            if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
-
+        
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
         }
@@ -976,7 +988,7 @@ class TableMaker {
         //tabular reset button to show all rows regardless of any filter
         if (this.Maker.filter && this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
 
-        if (this.attributes.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
+        if (this.Maker.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
 
         controlBtnsContainer.appendChild(controlBtnsGroup);
         NMaker.dom(this.attributes.parentSelector).appendChild(controlBtnsContainer);
