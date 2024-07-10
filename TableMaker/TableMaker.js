@@ -328,14 +328,14 @@ class NMaker {
         output.id = id + "-output";
         output.readOnly = true;
         output.type = "text";
-        NMaker.addStylesToElement(container, classes.display);
+        NMaker.addStylesToElement(output, classes.display);
         container.appendChild(output);
 
         //selection box of options
         let selector = document.createElement("select");
         selector.multiple = true;
         selector.style.overflowY = "auto";  //its a multiple select box, don't need scroll bars unless its too big
-        NMaker.addStylesToElement(container, classes.selector);
+        NMaker.addStylesToElement(selector, classes.selector);
         for (let option of options) {
             let opt = document.createElement("option");
             opt.innerText = option;
@@ -373,6 +373,7 @@ class NMaker {
             id: "ts-" + new Date().getTime(),
             name: attributes.id ? NMaker.toPascalCase(attributes.id) : 'TextSelector',
             label: "",
+            placeholder: false,
             autocomplete: true,
             classes: {
                 input: ["form-control"],
@@ -380,13 +381,19 @@ class NMaker {
                 label: [],
                 warning: ["text-danger"]
             },
-            value: false
+            value: false,
+            defaultValue: false //what to use if a user enters something that doesn't exist
         }
 
         attributes = {
             ...defaultAttributes,
             ...attributes
         };
+        
+        attributes.classes = {
+            ...defaultAttributes.classes,
+            ...attributes.classes
+        }
 
         //make container
         let container = NMaker.replaceElement(attributes.id + "-container", "div", attributes.classes.container);
@@ -438,7 +445,7 @@ class NMaker {
         }
 
         //make backing input
-        let backingInput = NMaker.makeElement("input", { id: attributes.id + "-input", name: attributes.name, type: "hidden" });
+        let backingInput = NMaker.makeElement("input", { id: attributes.id, name: attributes.name, type: "hidden" });
         container.appendChild(backingInput);
 
         //if label
@@ -450,6 +457,7 @@ class NMaker {
 
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
+        if(attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -477,9 +485,11 @@ class NMaker {
         //set id input to corresponding list value
         if (attributes.autocomplete) {
             let update = () => {
-                let matchingOptions = data.filter(datum => datum.value.includes(textInput.value));
+                let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
-                textInput.value = matchingOptions.length == 0 ? data[0].value : matchingOptions[0].value;
+                textInput.value = matchingOptions.length == 0 ? 
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) : 
+                    matchingOptions[0].value;
             }
             textInput.addEventListener("focusout", update, true);
             textInput.addEventListener("keydown", (e) => {
@@ -622,8 +632,14 @@ class Maker {
             if (this.filter) this.filter.makeFilter();
 
             if (this.paginator) {
-                this.activeData = this.paginator.getPagedData(this.activeData);
-                this.paginator.makePaginator();
+                if (this.paginator.attributes.pageLength >= (this.useInitialData ? this.initialData.length : this.getFilteredData().length)) {
+                    //just clear the paginator from the screen
+                    NMaker.dom(this.paginator.attributes.parentSelector).innerHTML = '';
+                }
+                else {
+                    this.activeData = this.paginator.getPagedData(this.activeData);
+                    this.paginator.makePaginator();
+                }
             }
 
             this.table.makeTable(this.activeData);
@@ -677,7 +693,8 @@ class TableMaker {
             sorting: false,
             noSorting: false,
             sortingOrientation: {},
-            useReset: false,
+            useReset: true,
+            useShow: true,
             currency: false,
             link: false
         };
@@ -761,6 +778,7 @@ class TableMaker {
                 if (this.attributes.sortingOrientation[heading] == null) this.attributes.sortingOrientation[heading] = "unset";
 
                 let btn = this.addSortBtn(heading);
+                btn.title = "Click to sort by this column";
                 NMaker.addStylesToElement(btn, this.attributes.classes.button);
                 btnContainer.appendChild(btn);
             }
@@ -771,6 +789,7 @@ class TableMaker {
                     this.Maker.hiddenHeadings.push(heading);
                     this.Maker.build();
                 }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn));
+                hideBtn.title = "Click to hide this columns, show again with the 👁 Cols button";
                 btnContainer.appendChild(hideBtn);
             }
 
@@ -891,10 +910,10 @@ class TableMaker {
         //Replace any prop in the condition with the value of that prop
         for (let prop in data) {
             //check for dates
-            if (data[prop] !== null && this.Maker.colTypes[prop] == "date") cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
+            if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
-
+        
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
         }
@@ -967,9 +986,9 @@ class TableMaker {
         let controlBtnsGroup = NMaker.replaceElement(this.attributes.id + "-controls-btn-group", "div", this.attributes.classes.controls);
 
         //tabular reset button to show all rows regardless of any filter
-        if (this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
+        if (this.Maker.filter && this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
 
-        if (this.attributes.hide) controlBtnsGroup.appendChild(this.makeShowBtn());
+        if (this.Maker.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
 
         controlBtnsContainer.appendChild(controlBtnsGroup);
         NMaker.dom(this.attributes.parentSelector).appendChild(controlBtnsContainer);
@@ -1381,7 +1400,7 @@ class FilterMaker {
         }
 
         //selector input group
-        let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.inputGroup);
+        let selectionInputGroup = NMaker.replaceElement(id + "-selection-group", "div", this.attributes.classes.selectionGroup);
 
         //property dropdown 'selector'
         let selector = this.makeSelector(id);
@@ -1401,10 +1420,8 @@ class FilterMaker {
             selectionContainer.appendChild(modLabel);
         }
 
-        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.inputGroup);
+        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.selectionGroup);
         modifierInputGroup.appendChild(this.makeModifier(id));
-
-        //TODO: put 'makeModifierOptions' here?
 
         selectionContainer.appendChild(modifierInputGroup);
 
@@ -1612,6 +1629,23 @@ class FilterMaker {
                     console.error("Value is undefined");
                     break;
             }
+        }
+
+        let modGroup = NMaker.dom(id + "-modifier-group");
+        if (modifier.children.length <= 1) {
+            modGroup.style.hidden = true;
+            modGroup.style.display = "none";
+            modifier.labels.forEach(l => {
+                l.style.hidden = true;
+                l.style.display = "none";
+            });
+        } else {
+            modGroup.style.hidden = false;
+            modGroup.style.display = "inline-block";
+            modifier.labels.forEach(l => {
+                l.style.hidden = false;
+                l.style.display = "inline-block";
+            });
         }
 
         modifier.onchange();

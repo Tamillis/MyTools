@@ -226,7 +226,8 @@
                         classesIf: ["table-primary"]
                     }
                 },
-                useReset: true
+                useReset: true,
+                useShow: true
             });
 
             tailored.makeFilter({
@@ -239,7 +240,6 @@
                     button: ["btn", "btn-sm", "w-auto", "min-width-is-height"]
                 },
                 useModifier: true,
-                useMemory: true,
                 modifiers: {
                     number: [NMaker.filterOptions.numberRange, NMaker.filterOptions.greaterThan, NMaker.filterOptions.lessThan],
                     string: [NMaker.filterOptions.contains, NMaker.filterOptions.select],
