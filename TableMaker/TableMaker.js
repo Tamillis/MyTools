@@ -1754,7 +1754,7 @@ class FilterMaker {
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
             placeholderOption.value = "";
-            placeholderOption.innerText = "Select one of...";
+            placeholderOption.innerText = "Select...";
             input.insertBefore(placeholderOption, input.firstElementChild);
         }
 
