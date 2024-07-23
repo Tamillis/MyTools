@@ -1146,8 +1146,10 @@ class FilterMaker {
                 addBtn: ["btn-success"],
                 buttonGroup: ["btn-group", "px-2"],
                 checkbox: ["form-check-input"],
-                selector: ["form-select", "col"],
                 selectionContainer: ["mx-2", "d-flex", "g-2", "align-items-baseline"],
+                selectionGroup: [],
+                selector: ["form-select", "col"],
+                modifierGroup: [],
                 modifier: ["form-select"],
                 label: ["mx-2"],
                 inputContainer: ["flex-grow-1"],
@@ -1420,7 +1422,7 @@ class FilterMaker {
             selectionContainer.appendChild(modLabel);
         }
 
-        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.selectionGroup);
+        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.modifierGroup);
         modifierInputGroup.appendChild(this.makeModifier(id));
 
         selectionContainer.appendChild(modifierInputGroup);
