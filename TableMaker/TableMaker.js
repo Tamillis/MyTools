@@ -261,16 +261,20 @@ class NMaker {
         //make lower Number input
         let lowerNumberInput = document.createElement("input");
         lowerNumberInput.type = "number";
+        lowerNumberInput.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$"; //by default number input considers any valid number valid
+        lowerNumberInput.step = "any";
         if (lower === null) lowerNumberInput.placeholder = 0;
-        else lowerNumberInput.value = lower;
+        else lowerNumberInput.value = Number(lower);
         lowerNumberInput.id = id + "-lower";
         NMaker.addStylesToElement(lowerNumberInput, classes.input);
 
         //make upper number input
         let upperNumberInput = document.createElement("input");
         upperNumberInput.type = "number";
+        upperNumberInput.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$";
+        upperNumberInput.step = "any";
         if (upper === null) upperNumberInput.placeholder = 1;
-        else upperNumberInput.value = upper;
+        else upperNumberInput.value = Number(upper);
         upperNumberInput.id = id + "-upper";
         NMaker.addStylesToElement(upperNumberInput, classes.input);
 
@@ -389,7 +393,7 @@ class NMaker {
             ...defaultAttributes,
             ...attributes
         };
-        
+
         attributes.classes = {
             ...defaultAttributes.classes,
             ...attributes.classes
@@ -457,7 +461,7 @@ class NMaker {
 
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
-        if(attributes.placeholder) textInput.placeholder = attributes.placeholder;
+        if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -487,8 +491,8 @@ class NMaker {
             let update = () => {
                 let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
-                textInput.value = matchingOptions.length == 0 ? 
-                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) : 
+                textInput.value = matchingOptions.length == 0 ?
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                     matchingOptions[0].value;
             }
             textInput.addEventListener("focusout", update, true);
@@ -653,6 +657,7 @@ class Maker {
         document.dispatchEvent(NMaker.buildEvent);
     }
 
+    //seems like this ought to be part of filter, no?
     getFilteredData() {
         let data = this.data;
 
@@ -660,6 +665,11 @@ class Maker {
             this.filter.setMemoryFromStorage();
             for (let filter of Object.values(this.filter.memory)) {
                 data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
+            }
+            if (this.filter.attributes.additionalFilters) {
+                for (let filter of this.filter.attributes.additionalFilters) {
+                    data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
+                }
             }
         }
 
@@ -913,7 +923,7 @@ class TableMaker {
             if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
-        
+
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
         }
@@ -1174,7 +1184,8 @@ class FilterMaker {
                 option: NMaker.filterOptions.contains,
                 upperValue: "",
                 lowerValue: ""
-            }
+            },
+            additionalFilters: false
         };
 
         this.attributes = {
@@ -1707,6 +1718,8 @@ class FilterMaker {
             case "number":
                 input.type = "number";
                 input.placeholder = 0;
+                input.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$"; //by default number input considers any valid number valid
+                input.step = "any"; //stops non-whole numbers being considered "invalid" despite the pattern above!!
                 if (Number(this.memory[id].lowerValue == "number") != NaN) input.value = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
@@ -1790,7 +1803,7 @@ class FilterMaker {
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
             placeholderOption.value = "";
-            placeholderOption.innerText = "Select one of...";
+            placeholderOption.innerText = "Select...";
             input.insertBefore(placeholderOption, input.firstElementChild);
         }
 
