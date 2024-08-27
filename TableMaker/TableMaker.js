@@ -747,6 +747,7 @@ class TableMaker {
                         break;
                     case "date":
                     case "datetime":
+                        case "boolean":
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
                         break;
                     default:
@@ -1376,7 +1377,6 @@ class FilterMaker {
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
             this.makeModifierOptions(id);
-
         }
         else {
             this.makeSimpleInputGroup(id);
@@ -1503,7 +1503,7 @@ class FilterMaker {
         for (let filterId of this.filterIds) {
             let selection = NMaker.dom(filterId + "-selector").value;
             let lowerValue = NMaker.dom(filterId + "-input") == null ? "" : NMaker.dom(filterId + "-input").value;
-            let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(lowerValue);
+            let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(this.Maker.colTypes[selection]);
             let upperValue = null;
 
             if (option == NMaker.filterOptions.dateRange || option == NMaker.filterOptions.numberRange) {
@@ -1661,6 +1661,7 @@ class FilterMaker {
             });
         }
 
+        //calling on change here is to get inputs to be generated, if I'm not mistaken, but surely they should be generated externally?
         modifier.onchange();
     }
 
@@ -1675,7 +1676,7 @@ class FilterMaker {
     }
 
     getDefaultFilterOption(value) {
-        switch (typeof value) {
+        switch (value) {
             case "bigint":
             case "number":
                 return NMaker.filterOptions.equals;
@@ -1734,7 +1735,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = this.memory[id].lowerValue;
+                input.checked = this.memory[id].lowerValue == "on";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "date":
