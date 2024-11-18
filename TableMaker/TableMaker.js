@@ -902,7 +902,8 @@ class TableMaker {
             //Image
             else if (this.attributes.img && this.attributes.img.hasOwnProperty(prop)) {
                 let imgData = this.attributes.img[prop];
-                cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
+                if(cellData == null) cellData = "[No image]";
+                else cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
             }
 
             //Text node
@@ -1197,8 +1198,6 @@ class FilterMaker {
                 option: NMaker.filterOptions.contains,
                 upperValue: "",
                 lowerValue: ""
-            },
-            additionalFilters: false
             },
             additionalFilters: false
         };
