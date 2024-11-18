@@ -375,6 +375,7 @@ class NMaker {
             label: "",
             placeholder: false,
             autocomplete: true,
+            allowOtherInput: false, //if the user is allowed to input something that is not in the given datalist
             classes: {
                 input: ["form-control"],
                 container: [],
@@ -389,7 +390,7 @@ class NMaker {
             ...defaultAttributes,
             ...attributes
         };
-        
+
         attributes.classes = {
             ...defaultAttributes.classes,
             ...attributes.classes
@@ -457,7 +458,7 @@ class NMaker {
 
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
-        if(attributes.placeholder) textInput.placeholder = attributes.placeholder;
+        if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -469,8 +470,13 @@ class NMaker {
             let possibilities = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
 
             if (possibilities.length == 0) {
-                textInput.value = priorInput;
-                NMaker.addStylesToElement(textInput, attributes.classes.warning);
+                if(!attributes.allowOtherInput) {
+                    textInput.value = priorInput;
+                    NMaker.addStylesToElement(textInput, attributes.classes.warning);
+                }
+                else {
+                    backingInput.value = textInput.value;
+                }
             }
             else {
                 backingInput.value = possibilities[0].id;
@@ -483,12 +489,12 @@ class NMaker {
 
         //autocomplete ensures that when the user clicks off, a full list value is overwritten into the target input
         //set id input to corresponding list value
-        if (attributes.autocomplete) {
+        if (attributes.autocomplete && !attributes.allowOtherInput) {
             let update = () => {
                 let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
-                textInput.value = matchingOptions.length == 0 ? 
-                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) : 
+                textInput.value = matchingOptions.length == 0 ?
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                     matchingOptions[0].value;
             }
             textInput.addEventListener("focusout", update, true);
@@ -653,6 +659,7 @@ class Maker {
         document.dispatchEvent(NMaker.buildEvent);
     }
 
+    //seems like this ought to be part of filter, no?
     getFilteredData() {
         let data = this.data;
 
@@ -660,6 +667,11 @@ class Maker {
             this.filter.setMemoryFromStorage();
             for (let filter of Object.values(this.filter.memory)) {
                 data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
+            }
+            if (this.filter.additionalFilters) {
+                for (let filter of this.filter.attributes.additionalFilters) {
+                    data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
+                }
             }
         }
 
@@ -913,7 +925,7 @@ class TableMaker {
             if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
-        
+
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
         }
@@ -1172,7 +1184,8 @@ class FilterMaker {
                 option: NMaker.filterOptions.contains,
                 upperValue: "",
                 lowerValue: ""
-            }
+            },
+            additionalFilters: false
         };
 
         this.attributes = {
