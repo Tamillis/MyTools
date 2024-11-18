@@ -261,16 +261,20 @@ class NMaker {
         //make lower Number input
         let lowerNumberInput = document.createElement("input");
         lowerNumberInput.type = "number";
+        lowerNumberInput.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$"; //by default number input considers any valid number valid
+        lowerNumberInput.step = "any";
         if (lower === null) lowerNumberInput.placeholder = 0;
-        else lowerNumberInput.value = lower;
+        else lowerNumberInput.value = Number(lower);
         lowerNumberInput.id = id + "-lower";
         NMaker.addStylesToElement(lowerNumberInput, classes.input);
 
         //make upper number input
         let upperNumberInput = document.createElement("input");
         upperNumberInput.type = "number";
+        upperNumberInput.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$";
+        upperNumberInput.step = "any";
         if (upper === null) upperNumberInput.placeholder = 1;
-        else upperNumberInput.value = upper;
+        else upperNumberInput.value = Number(upper);
         upperNumberInput.id = id + "-upper";
         NMaker.addStylesToElement(upperNumberInput, classes.input);
 
@@ -391,6 +395,7 @@ class NMaker {
             ...attributes
         };
 
+
         attributes.classes = {
             ...defaultAttributes.classes,
             ...attributes.classes
@@ -459,6 +464,7 @@ class NMaker {
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
         if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
+        if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -493,6 +499,8 @@ class NMaker {
             let update = () => {
                 let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
+                textInput.value = matchingOptions.length == 0 ?
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                 textInput.value = matchingOptions.length == 0 ?
                     (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                     matchingOptions[0].value;
@@ -660,6 +668,7 @@ class Maker {
     }
 
     //seems like this ought to be part of filter, no?
+    //seems like this ought to be part of filter, no?
     getFilteredData() {
         let data = this.data;
 
@@ -668,7 +677,7 @@ class Maker {
             for (let filter of Object.values(this.filter.memory)) {
                 data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
             }
-            if (this.filter.additionalFilters) {
+            if (this.filter.attributes.additionalFilters) {
                 for (let filter of this.filter.attributes.additionalFilters) {
                     data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
                 }
@@ -749,6 +758,7 @@ class TableMaker {
                         break;
                     case "date":
                     case "datetime":
+                        case "boolean":
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
                         break;
                     default:
@@ -925,6 +935,7 @@ class TableMaker {
             if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
+
 
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
@@ -1158,8 +1169,10 @@ class FilterMaker {
                 addBtn: ["btn-success"],
                 buttonGroup: ["btn-group", "px-2"],
                 checkbox: ["form-check-input"],
-                selector: ["form-select", "col"],
                 selectionContainer: ["mx-2", "d-flex", "g-2", "align-items-baseline"],
+                selectionGroup: [],
+                selector: ["form-select", "col"],
+                modifierGroup: [],
                 modifier: ["form-select"],
                 label: ["mx-2"],
                 inputContainer: ["flex-grow-1"],
@@ -1184,6 +1197,8 @@ class FilterMaker {
                 option: NMaker.filterOptions.contains,
                 upperValue: "",
                 lowerValue: ""
+            },
+            additionalFilters: false
             },
             additionalFilters: false
         };
@@ -1376,7 +1391,6 @@ class FilterMaker {
         //create the initial modifier options, if in use
         if (this.attributes.useModifier) {
             this.makeModifierOptions(id);
-
         }
         else {
             this.makeSimpleInputGroup(id);
@@ -1433,7 +1447,7 @@ class FilterMaker {
             selectionContainer.appendChild(modLabel);
         }
 
-        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.selectionGroup);
+        let modifierInputGroup = NMaker.replaceElement(id + "-modifier-group", "div", this.attributes.classes.modifierGroup);
         modifierInputGroup.appendChild(this.makeModifier(id));
 
         selectionContainer.appendChild(modifierInputGroup);
@@ -1503,7 +1517,7 @@ class FilterMaker {
         for (let filterId of this.filterIds) {
             let selection = NMaker.dom(filterId + "-selector").value;
             let lowerValue = NMaker.dom(filterId + "-input") == null ? "" : NMaker.dom(filterId + "-input").value;
-            let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(lowerValue);
+            let option = this.attributes.useModifier ? NMaker.dom(filterId + "-modifier").value : this.getDefaultFilterOption(this.Maker.colTypes[selection]);
             let upperValue = null;
 
             if (option == NMaker.filterOptions.dateRange || option == NMaker.filterOptions.numberRange) {
@@ -1661,6 +1675,7 @@ class FilterMaker {
             });
         }
 
+        //calling on change here is to get inputs to be generated, if I'm not mistaken, but surely they should be generated externally?
         modifier.onchange();
     }
 
@@ -1675,7 +1690,7 @@ class FilterMaker {
     }
 
     getDefaultFilterOption(value) {
-        switch (typeof value) {
+        switch (value) {
             case "bigint":
             case "number":
                 return NMaker.filterOptions.equals;
@@ -1718,6 +1733,8 @@ class FilterMaker {
             case "number":
                 input.type = "number";
                 input.placeholder = 0;
+                input.pattern = "^-?(0|[1-9]\d*)(\.\d+)?$"; //by default number input considers any valid number valid
+                input.step = "any"; //stops non-whole numbers being considered "invalid" despite the pattern above!!
                 if (Number(this.memory[id].lowerValue == "number") != NaN) input.value = this.memory[id].lowerValue;
                 NMaker.addStylesToElement(input, this.attributes.classes.input);
                 break;
@@ -1732,7 +1749,7 @@ class FilterMaker {
                 break;
             case "boolean":
                 input.type = "checkbox";
-                input.checked = this.memory[id].lowerValue;
+                input.checked = this.memory[id].lowerValue == "on";
                 NMaker.addStylesToElement(input, this.attributes.classes.checkbox);
                 break;
             case "date":
@@ -1801,6 +1818,7 @@ class FilterMaker {
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
             placeholderOption.value = "";
+            placeholderOption.innerText = "Select...";
             placeholderOption.innerText = "Select...";
             input.insertBefore(placeholderOption, input.firstElementChild);
         }
