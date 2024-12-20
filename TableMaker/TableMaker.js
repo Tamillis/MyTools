@@ -881,6 +881,7 @@ class TableMaker {
             //Link
             else if (this.attributes.link && this.attributes.link.hasOwnProperty(prop)) {
                 let linkData = this.attributes.link[prop];
+                if(linkData == null || linkData == "") cellData = ""; //skip if this row has null or blank data
                 //if linkData is the name of another property, use the data in there instead for variable link text
                 for (let otherProp in rowData) {
                     if (linkData.includes(otherProp) && otherProp !== prop) linkData = linkData.replace(otherProp, rowData[otherProp]);
