@@ -396,6 +396,7 @@ class NMaker {
             ...attributes
         };
 
+
         attributes.classes = {
             ...defaultAttributes.classes,
             ...attributes.classes
@@ -464,6 +465,7 @@ class NMaker {
         //make text input
         let textInput = NMaker.makeElement("input", { id: attributes.id + "-text-input", type: "text" }, attributes.classes.input);
         if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
+        if (attributes.placeholder) textInput.placeholder = attributes.placeholder;
         textInput.setAttribute("list", datalist.id);
 
         //save prior input to reset with if necessary
@@ -498,6 +500,8 @@ class NMaker {
             let update = () => {
                 let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
+                textInput.value = matchingOptions.length == 0 ?
+                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                 textInput.value = matchingOptions.length == 0 ?
                     (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
                     matchingOptions[0].value;
@@ -664,6 +668,7 @@ class Maker {
         document.dispatchEvent(NMaker.buildEvent);
     }
 
+    //seems like this ought to be part of filter, no?
     //seems like this ought to be part of filter, no?
     getFilteredData() {
         let data = this.data;
@@ -936,6 +941,7 @@ class TableMaker {
             if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
+
 
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
@@ -1816,6 +1822,7 @@ class FilterMaker {
             placeholderOption.disabled = true;
             placeholderOption.selected = true;
             placeholderOption.value = "";
+            placeholderOption.innerText = "Select...";
             placeholderOption.innerText = "Select...";
             input.insertBefore(placeholderOption, input.firstElementChild);
         }
