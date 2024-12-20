@@ -146,6 +146,7 @@ class NMaker {
     }
 
     static addStylesToElement(el, styles) {
+        if (!(el instanceof Element)) return;
         if (Array.isArray(styles)) for (let style of styles) el.classList.add(style);
     }
 
@@ -379,6 +380,7 @@ class NMaker {
             label: "",
             placeholder: false,
             autocomplete: true,
+            allowOtherInput: false, //if the user is allowed to input something that is not in the given datalist
             classes: {
                 input: ["form-control"],
                 container: [],
@@ -473,8 +475,13 @@ class NMaker {
             let possibilities = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
 
             if (possibilities.length == 0) {
-                textInput.value = priorInput;
-                NMaker.addStylesToElement(textInput, attributes.classes.warning);
+                if (!attributes.allowOtherInput) {
+                    textInput.value = priorInput;
+                    NMaker.addStylesToElement(textInput, attributes.classes.warning);
+                }
+                else {
+                    backingInput.value = textInput.value;
+                }
             }
             else {
                 backingInput.value = possibilities[0].id;
@@ -487,7 +494,7 @@ class NMaker {
 
         //autocomplete ensures that when the user clicks off, a full list value is overwritten into the target input
         //set id input to corresponding list value
-        if (attributes.autocomplete) {
+        if (attributes.autocomplete && !attributes.allowOtherInput) {
             let update = () => {
                 let matchingOptions = data.filter(datum => datum.value.toLowerCase().includes(textInput.value.toLowerCase()));
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
@@ -747,7 +754,7 @@ class TableMaker {
                         break;
                     case "date":
                     case "datetime":
-                        case "boolean":
+                    case "boolean":
                         sortOption = btnKind == "asc" ? NMaker.sortOptions.numeric : NMaker.sortOptions.numericReverse;
                         break;
                     default:
@@ -881,18 +888,22 @@ class TableMaker {
             //Link
             else if (this.attributes.link && this.attributes.link.hasOwnProperty(prop)) {
                 let linkData = this.attributes.link[prop];
-                if(linkData == null || linkData == "") cellData = ""; //skip if this row has null or blank data
+
                 //if linkData is the name of another property, use the data in there instead for variable link text
                 for (let otherProp in rowData) {
                     if (linkData.includes(otherProp) && otherProp !== prop) linkData = linkData.replace(otherProp, rowData[otherProp]);
                 }
-                cellData = NMaker.makeLink(linkData, cellData, this.attributes.classes.link);
+
+                //skip if this row has null or blank data
+                if (cellData == null || cellData == "") cellData = document.createTextNode("");
+                else cellData = NMaker.makeLink(linkData, cellData, this.attributes.classes.link);
             }
 
             //Image
             else if (this.attributes.img && this.attributes.img.hasOwnProperty(prop)) {
                 let imgData = this.attributes.img[prop];
-                cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
+                if (cellData == null) cellData = document.createTextNode("[No image]");
+                else cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
             }
 
             //Text node
