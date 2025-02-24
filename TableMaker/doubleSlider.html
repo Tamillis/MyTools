@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
+
     <style>
         :root {
             --default-col: #6440e9;
@@ -40,6 +41,64 @@
 
         .hidden {
             display: none;
+        }
+
+        input[type="range"].double-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 1px;
+            background-color: rgba(0, 0, 0, 0);
+            pointer-events: none;
+        }
+
+        input[type="range"].double-slider:first-child {
+            height: 0px;
+            z-index: 1;
+        }
+
+        input[type="range"].double-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            pointer-events: all;
+            width: 1em;
+            height: 1em;
+            background-color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"].double-slider::-moz-range-thumb {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            pointer-events: all;
+            width: 1em;
+            height: 1em;
+            background-color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"].double-slider::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            height: 5px;
+        }
+
+        input[type="range"].double-slider::-moz-range-track {
+            -moz-appearance: none;
+            height: 5px;
+        }
+
+        .double-slider-track {
+            width: 100%;
+            height: 4px;
+            position: absolute;
+            top: calc(50% - 1px);
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -121,182 +180,15 @@ input[type="range"].double-slider::-moz-range-track {
         </div>
     </div>
 
-    <style>
-        input[type="range"].double-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            top: 1px;
-            background-color: rgba(0, 0, 0, 0);
-            pointer-events: none;
-        }
-
-        input[type="range"].double-slider:first-child {
-            height: 0px;
-            z-index: 1;
-        }
-
-        input[type="range"].double-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            pointer-events: all;
-            width: 1em;
-            height: 1em;
-            background-color: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        input[type="range"].double-slider::-moz-range-thumb {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            pointer-events: all;
-            width: 1em;
-            height: 1em;
-            background-color: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        input[type="range"].double-slider::-webkit-slider-runnable-track {
-            -webkit-appearance: none;
-            height: 5px;
-        }
-
-        input[type="range"].double-slider::-moz-range-track {
-            -moz-appearance: none;
-            height: 5px;
-        }
-
-        .double-slider-track {
-            width: 100%;
-            height: 4px;
-            position: absolute;
-            top: calc(50% - 1px);
-            border-radius: 5px;
-        }
-    </style>
-
     <script>
-        makeDoubleSlider({
+        NMaker.makeDoubleSlider({
             parentSelector: "#double-slider-container",
-            labelPosition: "below"
+            labelPosition: "below",
+            labelPost: "ct",
+            max:6.5,
+            min:0.025,
+            step:0.025
         });
-
-        function makeDoubleSlider(attributes) {
-            // two range inputs, two spans to display the values
-            const defaultAttributes = {
-                id: "double-slider",
-                parentSelector: "body",
-                max: 1,
-                min: 0,
-                step: 0.01,
-                labelPosition: "above",
-                lowerRangeName: "LowerRange",
-                upperRangeName: "UpperRange"
-            };
-            attributes = {
-                ...defaultAttributes, ...attributes
-            };
-
-            let makeInput = (name) => {
-                let input = document.createElement("input");
-                input.type = "range";
-                input.classList.add("double-slider");
-                input.min = attributes.min;
-                input.max = attributes.max;
-                input.step = attributes.step;
-                input.name = name;
-                return input;
-            }
-
-            let lowerInput = makeInput(attributes.lowerRangeName);
-            let upperInput = makeInput(attributes.upperRangeName);
-
-            let container = document.createElement("div");
-            container.style.display = "flex";
-            container.style.flexDirection = "column";
-            container.style.gap = "0.5em";
-            container.style.paddingTop = "0.5em";
-
-            let inputContainer = document.createElement("div");
-            inputContainer.style.position = "relative";
-            inputContainer.style.width = "100%";
-            let displayContainer = document.createElement("div");
-            displayContainer.style.width = "100%";
-            displayContainer.style.display = "flex";
-            displayContainer.style.justifyContent = "space-between";
-
-            let sliderTrack = document.createElement("div");
-            sliderTrack.className = "double-slider-track";
-
-            let lowerDisplay = document.createElement("span");
-            lowerDisplay.style.width = "fit-content";
-            let upperDisplay = document.createElement("span");
-            upperDisplay.style.width = "fit-content";
-
-            let upper;
-            let lower;
-            let setLower = (val) => {
-                lower = Number(val);
-                if (lower >= upper) {
-                    upper = lower + attributes.step;
-                    if (upper > attributes.max) {
-                        upper = attributes.max;
-                        lower = attributes.max - attributes.step;
-                    }
-                    setUpper(upper);
-                }
-                lowerInput.value = lower;
-                lowerDisplay.innerText = lower.toPrecision(2);
-                fillColor();
-            }
-            let setUpper = (val) => {
-                upper = Number(val);
-                if (upper <= lower) {
-                    lower = upper - attributes.step;
-                    if (lower < attributes.min) {
-                        lower = attributes.min;
-                        upper = attributes.min + attributes.step;
-                    }
-                    setLower(lower);
-                }
-                upperInput.value = upper;
-                upperDisplay.innerText = upper.toPrecision(2);
-                fillColor();
-            }
-            let fillColor = () => {
-                percent1 = (lower / attributes.max) * 100;
-                percent2 = (upper / attributes.max) * 100;
-                sliderTrack.style.background = `linear-gradient(to right, #ccc ${percent1}% , var(--default-col) ${percent1}% , var(--default-col) ${percent2}%, #ccc ${percent2}%)`;
-            }
-
-
-            setLower(0.1 * attributes.max);
-            setUpper(0.9 * attributes.max);
-
-            lowerInput.addEventListener("input", (e) => setLower(e.target.value));
-            upperInput.addEventListener("input", (e) => setUpper(e.target.value));
-
-            inputContainer.appendChild(sliderTrack);
-            inputContainer.appendChild(lowerInput);
-            inputContainer.appendChild(upperInput);
-            displayContainer.appendChild(lowerDisplay);
-            displayContainer.appendChild(upperDisplay);
-            if (attributes.labelPosition == "above") {
-                container.appendChild(displayContainer);
-                container.appendChild(inputContainer);
-            }
-            else {
-                container.appendChild(inputContainer);
-                container.appendChild(displayContainer);
-            }
-            document.querySelector(attributes.parentSelector).appendChild(container);
-        }
     </script>
 </body>
 

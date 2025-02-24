@@ -502,9 +502,9 @@ class NMaker {
                 if (matchingOptions.length == 0) console.warn(`No matching datalist options found for TextSelector's value ${textInput.value}`);
                 textInput.value = matchingOptions.length == 0 ?
                     (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
-                textInput.value = matchingOptions.length == 0 ?
-                    (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
-                    matchingOptions[0].value;
+                    textInput.value = matchingOptions.length == 0 ?
+                        (attributes.defaultValue ? attributes.defaultValue : data[0].value) :
+                        matchingOptions[0].value;
             }
             textInput.addEventListener("focusout", update, true);
             textInput.addEventListener("keydown", (e) => {
@@ -530,6 +530,118 @@ class NMaker {
         }
 
         return container;
+    }
+
+    // two overlapping range inputs, with two spans to display the values, to function as a bounding input
+    static makeDoubleSlider(attributes = {}) {
+        const defaultAttributes = {
+            id: "double-slider",
+            parentSelector: "body",
+            max: 1,
+            min: 0,
+            step: 0.01,
+            lower: 0,
+            upper: 1,
+            labelPosition: "above",
+            labelPre: "",
+            labelPost: "",
+            lowerRangeName: "LowerRange",
+            upperRangeName: "UpperRange",
+            classes: {}
+        };
+        attributes = {
+            ...defaultAttributes, ...attributes
+        };
+
+        let makeInput = (id, name) => {
+            let input = NMaker.makeElement("input", { id: id, type: "range", min: attributes.min, max: attributes.max, step: attributes.step }, attributes.classes.input);
+            input.classList.add("double-slider");
+            input.name = name;
+            return input;
+        }
+
+        let lowerInput = makeInput(attributes.id + "-lower-input", attributes.lowerRangeName);
+        let upperInput = makeInput(attributes.id + "-upper-input", attributes.upperRangeName);
+
+        let container = document.createElement("div");
+        container.id = attributes.id;
+        container.style.display = "flex";
+        container.style.flexDirection = "column";
+        container.style.gap = "0.5em";
+        container.style.paddingTop = "0.5em";
+
+        let inputContainer = document.createElement("div");
+        inputContainer.style.position = "relative";
+        inputContainer.style.width = "100%";
+        let displayContainer = document.createElement("div");
+        displayContainer.style.width = "100%";
+        displayContainer.style.display = "flex";
+        displayContainer.style.justifyContent = "space-between";
+
+        let sliderTrack = document.createElement("div");
+        sliderTrack.className = "double-slider-track";
+
+        let lowerDisplay = document.createElement("span");
+        lowerDisplay.style.width = "fit-content";
+        let upperDisplay = document.createElement("span");
+        upperDisplay.style.width = "fit-content";
+
+        let upper;
+        let lower;
+        let setSliderTrack = () => {
+            let percent1 = (lower / attributes.max) * 100;
+            let percent2 = (upper / attributes.max) * 100;
+            sliderTrack.style.background = `linear-gradient(to right, #ccc ${percent1}% , var(--default-col) ${percent1}% , var(--default-col) ${percent2}%, #ccc ${percent2}%)`;
+        }
+        let setLower = (val) => {
+            lower = Number(val);
+            if (lower >= upper) {
+                upper = lower + attributes.step;
+                if (upper > attributes.max) {
+                    upper = attributes.max;
+                    lower = attributes.max - attributes.step;
+                }
+                setUpper(upper);
+            }
+            lowerInput.value = lower;
+            lowerDisplay.innerText = attributes.labelPre + lower.toPrecision(2) + attributes.labelPost;
+            setSliderTrack();
+        }
+        let setUpper = (val) => {
+            upper = Number(val);
+            if (upper <= lower) {
+                lower = upper - attributes.step;
+                if (lower < attributes.min) {
+                    lower = attributes.min;
+                    upper = attributes.min + attributes.step;
+                }
+                setLower(lower);
+            }
+            upperInput.value = upper;
+            upperDisplay.innerText = attributes.labelPre + upper.toPrecision(2) + attributes.labelPost;
+            setSliderTrack();
+        }
+
+        setLower(attributes.lower < attributes.min ? attributes.min : attributes.lower);
+        setUpper(attributes.upper > attributes.max ? attributes.max : attributes.upper);
+
+        lowerInput.addEventListener("input", (e) => setLower(e.target.value));
+        upperInput.addEventListener("input", (e) => setUpper(e.target.value));
+
+        inputContainer.appendChild(sliderTrack);
+        inputContainer.appendChild(lowerInput);
+        inputContainer.appendChild(upperInput);
+        displayContainer.appendChild(lowerDisplay);
+        displayContainer.appendChild(upperDisplay);
+        if (attributes.labelPosition == "above") {
+            container.appendChild(displayContainer);
+            container.appendChild(inputContainer);
+        }
+        else {
+            container.appendChild(inputContainer);
+            container.appendChild(displayContainer);
+        }
+        NMaker.dom(attributes.parentSelector).appendChild(container);
     }
 
     //all NMaker stored data start with their attribute plus -etc so this removes all storage kvp assocaited with element of id 'id'
