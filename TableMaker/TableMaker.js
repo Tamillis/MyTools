@@ -547,6 +547,8 @@ class NMaker {
             labelPost: "",
             lowerRangeName: "LowerRange",
             upperRangeName: "UpperRange",
+            sliderColour: "#000",
+            sliderBackground: "#fff",
             classes: {}
         };
         attributes = {
@@ -589,9 +591,9 @@ class NMaker {
         let upper;
         let lower;
         let setSliderTrack = () => {
-            let percent1 = (lower / attributes.max) * 100;
-            let percent2 = (upper / attributes.max) * 100;
-            sliderTrack.style.background = `linear-gradient(to right, #ccc ${percent1}% , var(--default-col) ${percent1}% , var(--default-col) ${percent2}%, #ccc ${percent2}%)`;
+            let per1 = (lower / attributes.max) * 100;
+            let per2 = (upper / attributes.max) * 100;
+            sliderTrack.style.background = `linear-gradient(to right, ${attributes.sliderBackground} ${per1}% , ${attributes.sliderColour} ${per1}% , ${attributes.sliderColour} ${per2}%, ${attributes.sliderBackground} ${per2}%)`;
         }
         let setLower = (val) => {
             lower = Number(val);
