@@ -541,59 +541,69 @@ class NMaker {
             min: 0,
             step: 0.01,
             lower: 0,
+            lowerLabel: "",
             upper: 1,
+            upperLabel: "",
             labelPosition: "above",
-            labelPre: "",
-            labelPost: "",
             lowerRangeName: "LowerRange",
             upperRangeName: "UpperRange",
             sliderColour: "#000",
-            sliderBackground: "#fff",
-            classes: {}
+            sliderBackground: "#ccc"
         };
+
+        let defaultClasses = {
+            input: ["form-control", "w-fit"],
+            slider: ["double-slider"],
+            container: ["f-col"],
+            displayContainer: ["f-row"],
+            numberContainer: ["input-group", "input-group-sm"],
+            numberLabel: ["input-group-text"],
+            btn: ["btn", "btn-sm", "btn-danger"],
+            useUpperBtn: ["btn-info"],
+            ignoreUpperBtn: ["btn-danger"]
+        }
+
         attributes = {
             ...defaultAttributes, ...attributes
         };
+        attributes.classes = {
+            ...defaultClasses,
+            ...attributes.classes
+        };
 
-        let makeInput = (id, name) => {
-            let input = NMaker.makeElement("input", { id: id, type: "range", min: attributes.min, max: attributes.max, step: attributes.step }, attributes.classes.input);
-            input.classList.add("double-slider");
+        //Create Functionality
+        let makeInput = (id, name, type) => {
+            let input = NMaker.makeElement("input", { id: id, type: type, min: attributes.min, max: attributes.max, step: attributes.step }, attributes.classes.input);
             input.name = name;
             return input;
         }
 
-        let lowerInput = makeInput(attributes.id + "-lower-input", attributes.lowerRangeName);
-        let upperInput = makeInput(attributes.id + "-upper-input", attributes.upperRangeName);
-
-        let container = document.createElement("div");
-        container.id = attributes.id;
-        container.style.display = "flex";
-        container.style.flexDirection = "column";
-        container.style.gap = "0.5em";
-        container.style.paddingTop = "0.5em";
-
-        let inputContainer = document.createElement("div");
-        inputContainer.style.position = "relative";
-        inputContainer.style.width = "100%";
-        let displayContainer = document.createElement("div");
-        displayContainer.style.width = "100%";
-        displayContainer.style.display = "flex";
-        displayContainer.style.justifyContent = "space-between";
+        let lowerSliderInput = makeInput(attributes.id + "-lower-slider", attributes.lowerRangeName, "range");
+        lowerSliderInput.className = attributes.classes.slider.join(" ");
+        let upperSliderInput = makeInput(attributes.id + "-upper-slider", attributes.upperRangeName, "range");
+        upperSliderInput.className = attributes.classes.slider.join(" ");
 
         let sliderTrack = document.createElement("div");
         sliderTrack.className = "double-slider-track";
 
-        let lowerDisplay = document.createElement("span");
-        lowerDisplay.style.width = "fit-content";
-        let upperDisplay = document.createElement("span");
-        upperDisplay.style.width = "fit-content";
+        let lowerNumberInput = makeInput(attributes.id + "-lower-number-input", attributes.lowerRangeName, "number");
+        lowerNumberInput.style.width = "5em";
+        let upperNumberInput = makeInput(attributes.id + "-upper-number-input", attributes.lowerRangeName, "number");
+        upperNumberInput.style.width = "5em";
+        let useUpperToggle = NMaker.makeElement("button", { id: attributes.id + "-use-upper-toggle", innerText: "Ignore" }, attributes.classes.btn);
 
+        let useUpper = true;
         let upper;
         let lower;
         let setSliderTrack = () => {
-            let per1 = (lower / attributes.max) * 100;
-            let per2 = (upper / attributes.max) * 100;
-            sliderTrack.style.background = `linear-gradient(to right, ${attributes.sliderBackground} ${per1}% , ${attributes.sliderColour} ${per1}% , ${attributes.sliderColour} ${per2}%, ${attributes.sliderBackground} ${per2}%)`;
+            if (useUpper) {
+                let per1 = (lower / attributes.max) * 100;
+                let per2 = (upper / attributes.max) * 100;
+                sliderTrack.style.background = `linear-gradient(to right, ${attributes.sliderBackground} ${per1}% , ${attributes.sliderColour} ${per1}% , ${attributes.sliderColour} ${per2}%, ${attributes.sliderBackground} ${per2}%)`;
+            }
+            else {
+                sliderTrack.style.background = attributes.sliderBackground;
+            }
         }
         let setLower = (val) => {
             lower = Number(val);
@@ -605,8 +615,8 @@ class NMaker {
                 }
                 setUpper(upper);
             }
-            lowerInput.value = lower;
-            lowerDisplay.innerText = attributes.labelPre + lower.toPrecision(2) + attributes.labelPost;
+            lowerSliderInput.value = lower;
+            lowerNumberInput.value = lower;
             setSliderTrack();
         }
         let setUpper = (val) => {
@@ -619,22 +629,90 @@ class NMaker {
                 }
                 setLower(lower);
             }
-            upperInput.value = upper;
-            upperDisplay.innerText = attributes.labelPre + upper.toPrecision(2) + attributes.labelPost;
+            upperSliderInput.value = upper;
+            upperNumberInput.value = upper;
             setSliderTrack();
         }
 
         setLower(attributes.lower < attributes.min ? attributes.min : attributes.lower);
         setUpper(attributes.upper > attributes.max ? attributes.max : attributes.upper);
 
-        lowerInput.addEventListener("input", (e) => setLower(e.target.value));
-        upperInput.addEventListener("input", (e) => setUpper(e.target.value));
+        lowerSliderInput.addEventListener("input", (e) => setLower(e.target.value));
+        upperSliderInput.addEventListener("input", (e) => setUpper(e.target.value));
+
+        lowerNumberInput.addEventListener("input", (e) => setLower(e.target.value));
+        upperNumberInput.addEventListener("input", (e) => setUpper(e.target.value));
+
+        useUpperToggle.addEventListener("click", (e) => {
+            useUpper = !useUpper;
+
+            if(useUpper) {
+                upperSliderInput.classList.remove("hidden");
+                upperSliderInput.value = attributes.max;
+                upperNumberInput.classList.remove("hidden");
+                upperNumberInput.value = attributes.max;
+                upper = attributes.max;
+                e.target.innerText = "Ignore";
+                NMaker.removeStylesFromElement(e.target, attributes.classes.useUpperBtn);
+                NMaker.addStylesToElement(e.target, attributes.classes.ignoreUpperBtn);
+            }
+            else {
+                upperSliderInput.classList.add("hidden");
+                upperNumberInput.classList.add("hidden");
+                upperNumberInput.value = "";
+                e.target.innerText = "Use Upperbound";
+                NMaker.addStylesToElement(e.target, attributes.classes.useUpperBtn);
+                NMaker.removeStylesFromElement(e.target, attributes.classes.ignoreUpperBtn);
+            }
+            setSliderTrack();
+        });
+
+        //And Structure DOM
+        let container = document.createElement("div");
+        container.id = attributes.id;
+        container.className = attributes.classes.container.join(" ");
+
+        let inputContainer = document.createElement("div");
+        inputContainer.style.position = "relative";
+        inputContainer.style.width = "100%";
+        let displayContainer = document.createElement("div");
+        NMaker.addStylesToElement(displayContainer, attributes.classes.displayContainer);
+
+        let upperContainer = document.createElement("div");
+        upperContainer.className = attributes.classes.numberContainer.join(" ");
+        upperContainer.style.width = "unset";
+        let lowerContainer = document.createElement("div");
+        lowerContainer.className = attributes.classes.numberContainer.join(" ");
+        lowerContainer.style.width = "unset";
+
+        let upperLabel = document.createElement("label");
+        upperLabel.innerText = attributes.upperLabel;
+        upperLabel.className = attributes.classes.numberLabel.join(" ");
+        let lowerLabel = document.createElement("label");
+        lowerLabel.innerText = attributes.lowerLabel;
+        lowerLabel.className = attributes.classes.numberLabel.join(" ");
+
+        let makeSpacer = () => {
+            let spacer = document.createElement("div");
+            spacer.style.flexGrow = "2";
+            return spacer;
+        }
 
         inputContainer.appendChild(sliderTrack);
-        inputContainer.appendChild(lowerInput);
-        inputContainer.appendChild(upperInput);
-        displayContainer.appendChild(lowerDisplay);
-        displayContainer.appendChild(upperDisplay);
+        inputContainer.appendChild(lowerSliderInput);
+        inputContainer.appendChild(upperSliderInput);
+
+        lowerContainer.appendChild(lowerNumberInput);
+        lowerContainer.appendChild(lowerLabel);
+
+        upperContainer.appendChild(useUpperToggle);
+        upperContainer.appendChild(upperNumberInput);
+        upperContainer.appendChild(upperLabel);
+
+        displayContainer.appendChild(lowerContainer);
+        displayContainer.appendChild(makeSpacer());
+        displayContainer.appendChild(upperContainer);
+
         if (attributes.labelPosition == "above") {
             container.appendChild(displayContainer);
             container.appendChild(inputContainer);
