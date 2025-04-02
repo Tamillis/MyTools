@@ -88,6 +88,8 @@ The tableMaker functions simply: through data provided to the `attributes` input
 | `link` | an array of objects of two properties: `name` that denotes the column to be effected and `text` which denotes the text of the link. The actual link's `href` is the data of the column so that ought to be valid href data  |
 | `conditionalClasses` | An object where each property is a header of your data, the value of which is an object with `condition` `target` and optional `classesIf` and `classesNot` properties used to tell TableMaker how to conditionally apply classes. The `condition` replaces the headings it finds in its string, with the data of the row for that heading. Targets are `row` `cell` and `link` |
 
+Columns can have column types that allow for special behaviour. Types are JS types, "Date" which automatically converts non-null date objects to `toLocaleDateString` strings, and "HTML" which slaps the `<td>` with the raw html of the string.
+
 Classes defaults: 
 
 ```js 

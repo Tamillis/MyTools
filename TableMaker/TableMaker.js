@@ -1025,6 +1025,11 @@ class TableMaker {
                 else cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
             }
 
+            //HTML
+            else if (this.Maker.colTypes[prop].toLowerCase() == "html") {
+                //do nothing, cellData is already html
+            }
+
             //Text node
             else {
                 cellData = document.createTextNode(cellData);
