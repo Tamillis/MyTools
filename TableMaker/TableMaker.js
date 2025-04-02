@@ -645,7 +645,8 @@ class NMaker {
 
         useUpperToggle.addEventListener("click", (e) => {
             useUpper = !useUpper;
-
+            useUpperToggle.dataset.useUpper = useUpper;
+            
             if(useUpper) {
                 upperSliderInput.classList.remove("hidden");
                 upperSliderInput.value = attributes.max;
