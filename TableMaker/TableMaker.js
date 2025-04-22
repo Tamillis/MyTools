@@ -643,7 +643,8 @@ class NMaker {
 
         useUpperToggle.addEventListener("click", (e) => {
             useUpper = !useUpper;
-
+            useUpperToggle.dataset.useUpper = useUpper;
+            
             if(useUpper) {
                 upperSliderInput.classList.remove("hidden");
                 upperSliderInput.value = attributes.max;
@@ -1099,6 +1100,11 @@ class TableMaker {
                 let imgData = this.attributes.img[prop];
                 if (cellData == null) cellData = document.createTextNode("[No image]");
                 else cellData = NMaker.makeImg(cellData, imgData, this.attributes.classes.img);
+            }
+
+            //HTML
+            else if (this.Maker.colTypes[prop].toLowerCase() == "html") {
+                //do nothing, cellData is already html
             }
 
             //Text node
