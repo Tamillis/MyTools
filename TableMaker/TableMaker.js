@@ -99,13 +99,11 @@ class NMaker {
                 console.error("Row of data is not an JS object");
                 return false;
             }
-            let props = "";
-            for (let prop in data[i]) {
-                props += prop + ",";
-            }
+            let props = Object.keys(data[i]).sort().join(",");
 
             //if the properties of the previous row don't match this one
             if (i > 0 && prevProps !== props) {
+                console.warn(prevProps, props);
                 console.error("Row of data doesn't fit columns");
                 return false;
             }
