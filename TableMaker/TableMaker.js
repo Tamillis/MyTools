@@ -644,8 +644,8 @@ class NMaker {
         useUpperToggle.addEventListener("click", (e) => {
             useUpper = !useUpper;
             useUpperToggle.dataset.useUpper = useUpper;
-            
-            if(useUpper) {
+
+            if (useUpper) {
                 upperSliderInput.classList.remove("hidden");
                 upperSliderInput.value = attributes.max;
                 upperNumberInput.classList.remove("hidden");
@@ -999,7 +999,7 @@ class TableMaker {
             }
 
             //hide btn
-            if(!this.Maker.ignoreHideBtns) {
+            if (!this.Maker.ignoreHideBtns) {
                 if (this.Maker.hiddenHeadings && (this.Maker.noHide ? !this.Maker.noHide.includes(heading) : true)) {
                     let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
                         this.Maker.hiddenHeadings.push(heading);
@@ -1207,7 +1207,7 @@ class TableMaker {
             },
             this.attributes.classes.controlBtn);
         resetBtn.title = "Show all data";
-        resetBtn.innerHTML = '&#x21ba; All';
+        resetBtn.innerHTML = '&#x21ba; Show All';
         return resetBtn;
     }
 
@@ -1216,7 +1216,7 @@ class TableMaker {
         let controlBtnsGroup = NMaker.replaceElement(this.attributes.id + "-controls-btn-group", "div", this.attributes.classes.controls);
 
         //tabular reset button to show all rows regardless of any filter
-        if (this.Maker.filter && this.attributes.useReset) controlBtnsGroup.appendChild(this.makeResetBtn());
+        if (this.Maker.filter && this.attributes.useReset && !this.Maker.useInitialData) controlBtnsGroup.appendChild(this.makeResetBtn());
 
         if (this.Maker.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
 
