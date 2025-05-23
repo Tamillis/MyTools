@@ -765,6 +765,7 @@ class Maker {
         this.showHeadings = null;
         this.hide = false;
         this.noHide = false;
+        this.ignoreHideBtns = attributes.ignoreHideBtns ? attributes.ignoreHideBtns : false;
 
         //initial hidden headings as set by attributes
         this.hiddenHeadings = attributes.hide ? attributes.hide : false;
@@ -998,13 +999,15 @@ class TableMaker {
             }
 
             //hide btn
-            if (this.Maker.hiddenHeadings && (this.Maker.noHide ? !this.Maker.noHide.includes(heading) : true)) {
-                let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
-                    this.Maker.hiddenHeadings.push(heading);
-                    this.Maker.build();
-                }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn));
-                hideBtn.title = "Click to hide this columns, show again with the 👁 Cols button";
-                btnContainer.appendChild(hideBtn);
+            if(!this.Maker.ignoreHideBtns) {
+                if (this.Maker.hiddenHeadings && (this.Maker.noHide ? !this.Maker.noHide.includes(heading) : true)) {
+                    let hideBtn = NMaker.makeBtn(this.attributes.id + "-" + heading + "-hide-btn", "✕", () => {
+                        this.Maker.hiddenHeadings.push(heading);
+                        this.Maker.build();
+                    }, this.attributes.classes.button.concat(this.attributes.classes.removeBtn));
+                    hideBtn.title = "Click to hide this columns, show again with the 👁 Cols button";
+                    btnContainer.appendChild(hideBtn);
+                }
             }
 
             headingContainer.appendChild(btnContainer);
@@ -1104,7 +1107,10 @@ class TableMaker {
 
             //HTML
             else if (this.Maker.colTypes[prop].toLowerCase() == "html") {
-                //do nothing, cellData is already html
+                //parse cellData to html nodes
+                var wrapper = document.createElement('div');
+                wrapper.innerHTML = cellData;
+                cellData = wrapper.firstChild == null ? document.createTextNode(cellData) : wrapper.firstChild;
             }
 
             //Text node
@@ -1137,7 +1143,6 @@ class TableMaker {
             if (data[prop] !== null && this.Maker.colTypes[prop].includes("date")) cc.condition = cc.condition.replaceAll(prop + ' ', "new Date(" + JSON.stringify(data[prop]) + ")");
             else cc.condition = cc.condition.replaceAll(prop + ' ', JSON.stringify(data[prop]));
         }
-
 
         if (eval?.(`"use strict";(${cc.condition})`) && cc.classesIf) {
             this.addStylesToTarget(cc.target, tr, td, cc.classesIf);
