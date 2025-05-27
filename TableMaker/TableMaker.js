@@ -604,6 +604,7 @@ class NMaker {
             }
         }
         let setLower = (val) => {
+            console.log(val);
             lower = Number(val);
             if (lower >= upper) {
                 upper = lower + attributes.step;
