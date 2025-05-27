@@ -758,6 +758,7 @@ class Maker {
         this.activeData = [...data];
         this.initialData = Object.freeze(data);
         this.data = data;
+        this.filterNone = false;
 
         this.headings = [];
         this.hiddenHeadings = false;
@@ -827,23 +828,22 @@ class Maker {
         this.updater = new UpdaterMaker(this, attributes);
     }
 
-    build(data = null) {
+    build() {
         if (!this.table && !this.updater) throw new Error("Cannot build without either an instance of TableMaker or UpdaterMaker");
 
         if (this.table) {
-            //reset active data
-            if (data) this.activeData = data;
-            else if (this.useInitialData) this.activeData = this.initialData;
-            else this.activeData = this.getFilteredData();
+            //rebuild active data
+            this.activeData = this.getFilteredData();
 
             if (this.filter) this.filter.makeFilter();
 
             if (this.paginator) {
-                if (this.paginator.attributes.pageLength >= (this.useInitialData ? this.initialData.length : this.getFilteredData().length)) {
-                    //just clear the paginator from the screen
+                //if there's less than a page of active data just clear the paginator from the screen
+                if (this.paginator.attributes.pageLength >= this.activeData.length) {
                     NMaker.dom(this.paginator.attributes.parentSelector).innerHTML = '';
                 }
                 else {
+                    //else reduce active data down to the data of this page
                     this.activeData = this.paginator.getPagedData(this.activeData);
                     this.paginator.makePaginator();
                 }
@@ -865,7 +865,7 @@ class Maker {
     getFilteredData() {
         let data = this.data;
 
-        if (this.filter) {
+        if (this.filter && !this.filterNone) {
             this.filter.setMemoryFromStorage();
             for (let filter of Object.values(this.filter.memory)) {
                 data = this.filter.filter(data, filter.option, filter.selection, filter.lowerValue, filter.upperValue);
@@ -940,7 +940,8 @@ class TableMaker {
             }
 
             //sort the data based on its type
-            this.Maker.data = this.Maker.data.slice().sort((prevRow, currRow) => {
+            let data = this.Maker.data;
+            data = data.slice().sort((prevRow, currRow) => {
                 let sortOption = null;
                 switch (this.Maker.colTypes[column]) {
                     case "number":
@@ -960,6 +961,8 @@ class TableMaker {
 
                 return NMaker.compare(sortOption, prevRow[column], currRow[column]);
             });
+
+            this.Maker.data = data;
 
             this.Maker.build();
         }, this.attributes.classes.button);
@@ -1197,18 +1200,18 @@ class TableMaker {
         return showBtn;
     }
 
-    makeResetBtn() {
-        let resetBtn = NMaker.makeBtn(
+    makeShowAllBtn() {
+        let btn = NMaker.makeBtn(
             this.attributes.id + "-reset-btn", "",
             () => {
-                //reset tabular data
-                this.Maker.useInitialData = true;
-                this.Maker.build(this.Maker.initialData);
+                //set maker to filter nothing
+                this.Maker.filterNone = true;
+                this.Maker.build();
             },
-            this.attributes.classes.controlBtn);
-        resetBtn.title = "Show all data";
-        resetBtn.innerHTML = '&#x21ba; Show All';
-        return resetBtn;
+            this.attributes.classes.controlBtn,
+            "Show all data");
+        btn.innerHTML = '&#x21ba; Show All';
+        return btn;
     }
 
     makeButtonControls() {
@@ -1216,7 +1219,7 @@ class TableMaker {
         let controlBtnsGroup = NMaker.replaceElement(this.attributes.id + "-controls-btn-group", "div", this.attributes.classes.controls);
 
         //tabular reset button to show all rows regardless of any filter
-        if (this.Maker.filter && this.attributes.useReset && !this.Maker.useInitialData) controlBtnsGroup.appendChild(this.makeResetBtn());
+        if (this.Maker.filter && this.attributes.useReset && !this.showingAll()) controlBtnsGroup.appendChild(this.makeShowAllBtn());
 
         if (this.Maker.hiddenHeadings && this.attributes.useShow) controlBtnsGroup.appendChild(this.makeShowBtn());
 
@@ -1233,6 +1236,10 @@ class TableMaker {
         this.makeTableBody(data);
 
         NMaker.dom(this.attributes.parentSelector).appendChild(this.table);
+    }
+
+    showingAll() {
+        return this.Maker.initialData.length == this.Maker.getFilteredData().length
     }
 }
 
@@ -1338,8 +1345,7 @@ class PaginatorMaker {
         let mainDisplay = document.createTextNode(`Page ${this.page} / ${this.pages}`);
         let subDisplay = "";
         if (this.attributes.fullDisplay) {
-            if (this.Maker.useInitialData) subDisplay = this.Maker.initialData.length + " rows";
-            else subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`;
+            subDisplay = `${this.Maker.getFilteredData().length} / ${this.Maker.initialData.length} rows`;
         }
         subDisplay += ` (${this.Maker.activeData.length} shown)\n`;
         subDisplay = document.createTextNode(subDisplay);
@@ -1372,6 +1378,8 @@ class FilterMaker {
                 filterContainer: ["flex-grow-1"],
                 button: ["btn", "btn-sm"],
                 utilityBtn: ["btn-outline-secondary"],
+                searchBtn: [],
+                resetBtn: [],
                 removeBtn: ["btn-danger"],
                 addBtn: ["btn-success"],
                 buttonGroup: ["btn-group", "px-2"],
@@ -1693,19 +1701,24 @@ class FilterMaker {
 
         //reset button - resets filters to resetSettings, which defaults to defaultSettings
         if (this.attributes.useReset) {
-            let resetBtn = NMaker.makeBtn(this.attributes.id + "-reset", "↺", () => {
-                //clear sessionStorage of relevant items
-                NMaker.clearStorageOfId(this.attributes.id);
-                // //hard reset data
-                // this.Maker.activeData = this.Maker.initialData;
+            let resetBtn = NMaker.makeBtn(
+                this.attributes.id + "-reset",
+                "↺",
+                () => {
+                    //clear sessionStorage of relevant items
+                    NMaker.clearStorageOfId(this.attributes.id);
+                    // //hard reset data
+                    // this.Maker.activeData = this.Maker.initialData;
 
-                //set filter to blank
-                this.setMemoryFromSettings(this.attributes.resetSettings);
-                this.saveMemoryToStorage();
+                    //set filter to blank
+                    this.setMemoryFromSettings(this.attributes.resetSettings);
+                    this.saveMemoryToStorage();
 
-                //build reset filters from storage
-                this.Maker.build();
-            }, this.attributes.classes.button.concat(this.attributes.classes.utilityBtn), "Reset filters to settings")
+                    //build reset filters from storage
+                    this.Maker.build();
+                },
+                [...this.attributes.classes.button, ...this.attributes.classes.utilityBtn, ...this.attributes.classes.resetBtn],
+                "Reset filters to settings")
             btnControlsContainer.appendChild(resetBtn);
         }
 
@@ -1765,10 +1778,9 @@ class FilterMaker {
 
             //save memory to storage for rebuild post-search
             this.saveMemoryToStorage();
-
-            this.Maker.useInitialData = false;
+            this.Maker.filterNone = false;
             this.Maker.build();
-        }, this.attributes.classes.button.concat(this.attributes.classes.utilityBtn), "Search in the table");
+        }, [...this.attributes.classes.button, ...this.attributes.classes.utilityBtn, ...this.attributes.classes.searchBtn], "Search in the table");
     }
 
     makeModifier(id) {
