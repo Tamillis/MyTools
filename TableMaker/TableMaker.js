@@ -593,8 +593,10 @@ class NMaker {
         let useUpperToggle = NMaker.makeElement("button", { id: attributes.id + "-use-upper-toggle", innerText: "Ignore" }, attributes.classes.btn);
 
         let useUpper = true;
-        let upper;
-        let lower;
+        let priorupper = attributes.upper > attributes.max ? attributes.max : attributes.upper;
+        let priorlower = attributes.lower < attributes.min ? attributes.min : attributes.lower;
+        let upper = priorupper;
+        let lower = priorlower;
         let setSliderTrack = () => {
             if (useUpper) {
                 let per1 = (lower / attributes.max) * 100;
@@ -606,7 +608,10 @@ class NMaker {
             }
         }
         let setLower = (val) => {
+            if(val == priorlower) return;
             lower = Number(val);
+            priorlower = lower;
+            console.log(val);
             if (lower >= upper) {
                 upper = lower + attributes.step;
                 if (upper > attributes.max) {
@@ -616,11 +621,13 @@ class NMaker {
                 setUpper(upper);
             }
             lowerSliderInput.value = lower;
-            lowerNumberInput.value = lower;
+            lowerNumberInput.value = val;   //retains non numeric number characters like decimal point
             setSliderTrack();
         }
         let setUpper = (val) => {
+            if(val == priorupper) return;
             upper = Number(val);
+            priorupper = upper;
             if (upper <= lower) {
                 lower = upper - attributes.step;
                 if (lower < attributes.min) {
@@ -630,12 +637,13 @@ class NMaker {
                 setLower(lower);
             }
             upperSliderInput.value = upper;
-            upperNumberInput.value = upper;
+            upperNumberInput.value = val;
             setSliderTrack();
         }
 
-        setLower(attributes.lower < attributes.min ? attributes.min : attributes.lower);
-        setUpper(attributes.upper > attributes.max ? attributes.max : attributes.upper);
+        //init lower and upper
+        setLower(lower);
+        setUpper(upper);
 
         lowerSliderInput.addEventListener("input", (e) => setLower(e.target.value));
         upperSliderInput.addEventListener("input", (e) => setUpper(e.target.value));
@@ -646,8 +654,8 @@ class NMaker {
         useUpperToggle.addEventListener("click", (e) => {
             useUpper = !useUpper;
             useUpperToggle.dataset.useUpper = useUpper;
-            
-            if(useUpper) {
+
+            if (useUpper) {
                 upperSliderInput.classList.remove("hidden");
                 upperSliderInput.value = attributes.max;
                 upperNumberInput.classList.remove("hidden");
