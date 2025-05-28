@@ -243,19 +243,12 @@
                 modifiers: {
                     number: [NMaker.filterOptions.numberRange, NMaker.filterOptions.greaterThan, NMaker.filterOptions.lessThan],
                     string: [NMaker.filterOptions.contains, NMaker.filterOptions.select],
-                    date: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange],
                     boolean: [NMaker.filterOptions.boolean],
-                    registered: [NMaker.filterOptions.date, NMaker.filterOptions.dateRange, NMaker.filterOptions.empty],
+                    registered: [NMaker.filterOptions.after, NMaker.filterOptions.dateRange, NMaker.filterOptions.empty],
                     eyeColor: [NMaker.filterOptions.select]
                 },
                 useSubFilter: true,
                 useReset: true,
-                // defaultSettings: {
-                //     selection: "name",
-                //     option: NMaker.filterOptions.startsWith,
-                //     lowerValue: "m",
-                //     upperValue: ""
-                // },
                 defaultSettings: [{
                     selection: "registered",
                     option: NMaker.filterOptions.after,
@@ -270,7 +263,7 @@
                 //verbose: true
                 verbose: {
                     col: "Col: ",
-                    mod: ""
+                    mod: " : "
                 }
             });
 
