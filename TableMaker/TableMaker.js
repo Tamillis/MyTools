@@ -591,10 +591,11 @@ class NMaker {
         let useUpperToggle = NMaker.makeElement("button", { id: attributes.id + "-use-upper-toggle", innerText: "Ignore" }, attributes.classes.btn);
 
         let useUpper = true;
-        let priorupper = attributes.upper > attributes.max ? attributes.max : attributes.upper;
-        let priorlower = attributes.lower < attributes.min ? attributes.min : attributes.lower;
-        let upper = priorupper;
-        let lower = priorlower;
+        let priorupper = Number.MIN_SAFE_INTEGER;
+        let priorlower = Number.MAX_SAFE_INTEGER;
+        let lower = attributes.lower < attributes.min ? attributes.min : attributes.lower;
+        let upper = attributes.upper > attributes.max ? attributes.max : attributes.upper;
+
         let setSliderTrack = () => {
             if (useUpper) {
                 let per1 = (lower / attributes.max) * 100;
@@ -606,10 +607,10 @@ class NMaker {
             }
         }
         let setLower = (val) => {
-            if(val == priorlower) return;
+            if (val == priorlower) return;
             lower = Number(val);
             priorlower = lower;
-            console.log(val);
+
             if (lower >= upper) {
                 upper = lower + attributes.step;
                 if (upper > attributes.max) {
@@ -623,7 +624,7 @@ class NMaker {
             setSliderTrack();
         }
         let setUpper = (val) => {
-            if(val == priorupper) return;
+            if (val == priorupper) return;
             upper = Number(val);
             priorupper = upper;
             if (upper <= lower) {
